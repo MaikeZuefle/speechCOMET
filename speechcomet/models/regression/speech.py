@@ -166,8 +166,7 @@ class SpeechRegression(RegressionMetric):
         Returns:
             Model inputs and depending on the 'stage' training labels/targets.
         """
-        inputs = {k: [str(dic[k]) for dic in sample] for k in sample[0] if k != "score"}
-
+        inputs = {k: [dic[k] for dic in sample] for k in sample[0] if k != "score"}
         
         src_inputs=  {"src_input_ids": None, "src_attention_mask": None}
 
@@ -246,13 +245,28 @@ class SpeechRegression(RegressionMetric):
         Returns:
             List[dict]: List with input samples in the form of a dict
         """
-        df = pd.read_csv(path)
-        df = df[["src", "mt", "score", "src_audio"]]
-        df["src"] = df["src"].astype(str)
-        df["mt"] = df["mt"].astype(str)
-        df["src_audio"] = df["src_audio"].astype(str) 
-        df["score"] = df["score"].astype("float16")
-        return df.to_dict("records")
+        if path.endswith(".csv"):
+            df = pd.read_csv(path)
+            df = df[["src", "mt", "score", "src_audio"]]
+            df["src"] = df["src"].astype(str)
+            df["mt"] = df["mt"].astype(str)
+            df["src_audio"] = df["src_audio"].astype(str) 
+            df["score"] = df["score"].astype("float16")
+            return df.to_dict("records")
+        else:
+            from datasets import load_dataset
+            dataset = load_dataset("maikezu/iwslt2026-metrics-shared-train-dev")["train"]
+            dataset = dataset.rename_columns({
+                "src_text": "src",
+                "tgt_text": "mt",
+                "audio": "src_audio",
+            })
+            dataset = dataset.remove_columns(
+                [c for c in dataset.column_names if c not in {"src", "mt", "score", "src_audio"}]
+            )
+
+            return dataset
+
 
     def read_validation_data(self, path: str) -> List[dict]:
         """Method that reads the validation data (a csv file) and returns a list of
@@ -261,12 +275,25 @@ class SpeechRegression(RegressionMetric):
         Returns:
             List[dict]: List with input samples in the form of a dict
         """
-        df = pd.read_csv(path)
-        columns = ["src", "mt", "score", "src_audio"]
+        if path.endswith(".csv"):
+            df = pd.read_csv(path)
+            columns = ["src", "mt", "score", "src_audio"]
 
-        df = df[columns]
-        df["score"] = df["score"].astype("float16")
-        df["src"] = df["src"].astype(str)
-        df["mt"] = df["mt"].astype(str)
-        df["src_audio"] = df["src_audio"].astype(str) 
-        return df.to_dict("records")
+            df = df[columns]
+            df["score"] = df["score"].astype("float16")
+            df["src"] = df["src"].astype(str)
+            df["mt"] = df["mt"].astype(str)
+            df["src_audio"] = df["src_audio"].astype(str) 
+            return df.to_dict("records")
+        else:
+            from datasets import load_dataset
+            dataset = load_dataset("maikezu/iwslt2026-metrics-shared-train-dev")["dev"]
+            dataset = dataset.rename_columns({
+                "src_text": "src",
+                "tgt_text": "mt",
+                "audio": "src_audio",
+            })
+            dataset = dataset.remove_columns(
+                [c for c in dataset.column_names if c not in {"src", "mt", "score", "src_audio"}]
+            )
+            return dataset

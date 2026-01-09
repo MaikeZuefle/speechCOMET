@@ -18,7 +18,6 @@ XLM-RoBERTa Encoder
     Pretrained XLM-RoBERTa  encoder from Hugging Face.
 """
 from typing import Dict
-
 import torch
 from transformers import XLMRobertaConfig, XLMRobertaModel, XLMRobertaTokenizerFast
 

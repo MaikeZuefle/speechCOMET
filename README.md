@@ -9,6 +9,9 @@ Install the package locally and
 pip3 install -e .
 speechcomet-train --cfg configs/models/speech_audio.yaml
 speechcomet-train --cfg configs/models/speech_audiotext.yaml
+speechcomet-train --cfg configs/models/speech_text.yaml
+
+
 speechcomet-score ...
 
 python3 scripts/01-get_data_text.py

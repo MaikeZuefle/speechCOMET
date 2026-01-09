@@ -33,11 +33,19 @@ class SONAREncoder(Encoder):
         if self.need_project:
             self.projection = torch.nn.Linear(sonar_dim, text_out_dim).to(device)
 
-    def prepare_sample(self, file_paths):
+    def prepare_sample(self, audios):
+        from datasets.features._torchcodec import AudioDecoder
         import torchaudio
         waveforms = []
-        for file_path in file_paths:
-            waveform, sr = torchaudio.load(file_path)
+
+        for item in audios:
+            if type(item).__name__ == "AudioDecoder": # HF encoded audio
+                samples = item.get_all_samples()
+                waveform = samples.data            # torch.Tensor (channels × samples)
+                sr = samples.sample_rate
+            else:
+                waveform, sr = torchaudio.load(str(item))
+
             if sr != self.sr:
                 resampler = torchaudio.transforms.Resample(orig_freq=sr, new_freq=self.sr)
                 waveform = resampler(waveform)
