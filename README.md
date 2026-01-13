@@ -20,7 +20,7 @@ python3 scripts/01-get_data_text.py
 or in Python:
 ```python
 import speechcomet
-model = speechcomet.download_model(speechcomet.load_from_checkcpoint("..."))
+model = speechcomet.load_from_checkpoint("...")
 model.score(...)
 ```
 

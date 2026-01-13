@@ -29,12 +29,12 @@ init_args:
   gradient_clip_val: 1.0
   gradient_clip_algorithm: norm
   deterministic: false
-  benchmark: null
-  inference_mode: true
-  use_distributed_sampler: true
+  benchmark: false # was null before
+  #inference_mode: true
+  #use_distributed_sampler: true
   profiler: null
   detect_anomaly: false
-  barebones: false
+  #barebones: false
   sync_batchnorm: false
   reload_dataloaders_every_n_epochs: 0
 

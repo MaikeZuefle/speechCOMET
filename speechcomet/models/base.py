@@ -506,7 +506,7 @@ class CometModel(ptl.LightningModule, metaclass=abc.ABCMeta):
             ]
 
             self.first_epoch_total_steps = len(train_dataset) // (
-                self.hparams.batch_size * max(1, self.trainer.num_devices)
+                self.hparams.batch_size * max(1, self.trainer.devices) # previously self.trainer.devices
             )
             # Always validate the model with part of training.
             train_subset = np.random.choice(
@@ -530,7 +530,7 @@ class CometModel(ptl.LightningModule, metaclass=abc.ABCMeta):
             sampler=RandomSampler(train_dataset),
             batch_size=self.hparams.batch_size,
             collate_fn=lambda s: self.prepare_sample(s, stage="fit"),
-            num_workers=2 * self.trainer.num_devices,
+            num_workers=2 * self.trainer.devices,
         )
 
     def val_dataloader(self) -> DataLoader:
@@ -540,7 +540,7 @@ class CometModel(ptl.LightningModule, metaclass=abc.ABCMeta):
                 dataset=self.train_subset,
                 batch_size=self.hparams.batch_size,
                 collate_fn=lambda s: self.prepare_sample(s, stage="validate"),
-                num_workers=2 * self.trainer.num_devices,
+                num_workers=2 * self.trainer.devices,
             )
         ]
         for validation_set in self.validation_sets:
@@ -549,7 +549,7 @@ class CometModel(ptl.LightningModule, metaclass=abc.ABCMeta):
                     dataset=validation_set,
                     batch_size=self.hparams.batch_size,
                     collate_fn=lambda s: self.prepare_sample(s, stage="validate"),
-                    num_workers=2 * self.trainer.num_devices,
+                    num_workers=2 * self.trainer.devices,
                 )
             )
         return val_data
@@ -661,7 +661,7 @@ class CometModel(ptl.LightningModule, metaclass=abc.ABCMeta):
             logger=False,
             callbacks=callbacks,
             accelerator=accelerator if gpus > 0 else "cpu",
-            strategy="auto" if gpus < 2 else "ddp",
+            strategy="ddp" if gpus > 1 else None, #strategy="auto" if gpus < 2 else "ddp",
             enable_progress_bar=enable_progress_bar,
         )
         return_predictions = False if gpus > 1 else True

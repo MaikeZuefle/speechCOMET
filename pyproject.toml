@@ -20,6 +20,7 @@ classifiers = [
 ]
 
 dependencies = [
+    "torch",
     "sentencepiece>=0.2.0",
     "pandas>=2.0",
     "transformers>=4.17",
@@ -33,12 +34,12 @@ dependencies = [
     "entmax>=1.1",
     "huggingface-hub",
     "protobuf>=4.24.4",
-    "torchaudio>=2.9.1",
+    "torchaudio>=2.9.0",
     "torchcodec>=0.8.1",
     "sonar-space",
     "fairseq2",
     "subset2evaluate >= 1.0.15",
-    "tensorboard",
+    "tensorboard"
 ]
 
 [project.urls]

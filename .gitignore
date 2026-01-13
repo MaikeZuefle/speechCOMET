@@ -133,5 +133,8 @@ dmypy.json
 
 # Other stuff
 myjob.sh
+myjob_ckpt.sh
 todo.txt
 z_outputs/
+default/
+eval_scripts/iwslt26-metrics

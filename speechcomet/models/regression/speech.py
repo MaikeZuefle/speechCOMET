@@ -29,6 +29,8 @@ from speechcomet.models.utils import Prediction, Target
 from speechcomet.modules import FeedForward
 from speechcomet.encoders.sonar import SONAREncoder
 
+import random
+SEED = 42
 
 class SpeechRegression(RegressionMetric):
     """SpeechRegression:
@@ -123,6 +125,7 @@ class SpeechRegression(RegressionMetric):
         )
         self.save_hyperparameters()
         self.input_modality = input_modality
+
         if self.input_modality == "audio":
             # somehow self.device is cpu here, so set manually
             self.encoder_model_audio = SONAREncoder(encoder_model_audio, text_out_dim=self.encoder.output_units, device="cuda")
@@ -255,6 +258,9 @@ class SpeechRegression(RegressionMetric):
             return df.to_dict("records")
         else:
             from datasets import load_dataset
+            from collections import Counter
+            rng = random.Random(SEED)
+
             dataset = load_dataset("maikezu/iwslt2026-metrics-shared-train-dev")["train"]
             dataset = dataset.rename_columns({
                 "src_text": "src",
@@ -265,7 +271,30 @@ class SpeechRegression(RegressionMetric):
                 [c for c in dataset.column_names if c not in {"src", "mt", "score", "src_audio"}]
             )
 
-            return dataset
+
+            # remove examples for dev set
+            src_items = list(Counter(dataset["src"]).items())
+            rng.shuffle(src_items)
+
+            TARGET = 1700
+            dev_srcs = set()
+            count = 0
+
+            for src, size in src_items:
+                if count + size > TARGET:  # soft cap
+                    continue
+                dev_srcs.add(src)
+                count += size
+                if count >= TARGET:
+                    break
+
+            train_indices = [
+                i for i, src in enumerate(dataset["src"])
+                if src not in set(dev_srcs)
+            ]
+
+            train_dataset = dataset.select(train_indices)
+            return train_dataset
 
 
     def read_validation_data(self, path: str) -> List[dict]:
@@ -287,7 +316,10 @@ class SpeechRegression(RegressionMetric):
             return df.to_dict("records")
         else:
             from datasets import load_dataset
-            dataset = load_dataset("maikezu/iwslt2026-metrics-shared-train-dev")["dev"]
+            from collections import Counter
+            rng = random.Random(SEED)
+
+            dataset = load_dataset("maikezu/iwslt2026-metrics-shared-train-dev")["train"]
             dataset = dataset.rename_columns({
                 "src_text": "src",
                 "tgt_text": "mt",
@@ -296,4 +328,28 @@ class SpeechRegression(RegressionMetric):
             dataset = dataset.remove_columns(
                 [c for c in dataset.column_names if c not in {"src", "mt", "score", "src_audio"}]
             )
-            return dataset
+
+
+            # remove examples for dev set
+            src_items = list(Counter(dataset["src"]).items())
+            rng.shuffle(src_items)
+
+            TARGET = 1700
+            dev_srcs = set()
+            count = 0
+
+            for src, size in src_items:
+                if count + size > TARGET:  # soft cap
+                    continue
+                dev_srcs.add(src)
+                count += size
+                if count >= TARGET:
+                    break
+
+            dev_indices = [
+                i for i, src in enumerate(dataset["src"])
+                if src in set(dev_srcs)
+            ]
+
+            dev_dateset = dataset.select(dev_indices)
+            return dev_dateset
