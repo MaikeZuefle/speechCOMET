@@ -9,9 +9,11 @@ from tqdm import tqdm
 def run_eval(args):
     # get checkpoints
     ckpt_dir = os.path.join(args.model_folder, "checkpoints")
-    matches = glob.glob(os.path.join(ckpt_dir, "epoch=4-*.ckpt"))
-    assert matches, "No checkpoint found for epoch=4"
-    checkpoint = matches[0]
+    matches = glob.glob(os.path.join(ckpt_dir, "epoch=*-*.ckpt"))
+    checkpoint = max(
+        matches,
+        key=lambda p: int(os.path.basename(p).split("epoch=")[1].split("-")[0])
+    )
 
     # load model and data
     model = speechcomet.load_from_checkpoint(checkpoint)
@@ -24,10 +26,9 @@ def run_eval(args):
         if args.modality == "text":
             sample = {"src": entry["src_text"], "mt": entry["tgt_text"]}
         elif args.modality == "audio":
-            raise NotImplementedError
-            sample = {"audio": entry["src_audio"], "mt": entry["tgt_text"]}
-        elif args.modality == "textaudio":
-            raise NotImplementedError
+            sample = {"src_audio": entry["audio"], "mt": entry["tgt_text"]}
+        elif args.modality == "textaudio" or "audiotext":
+            sample = {"src_audio": entry["audio"], "src": entry["src_text"], "mt": entry["tgt_text"]}
         samples.append(sample)
         entry.pop("audio", None)
         outputs.append(entry)

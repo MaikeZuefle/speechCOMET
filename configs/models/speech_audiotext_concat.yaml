@@ -10,6 +10,7 @@ speech_regression_metric:
     encoder_model: XLM-RoBERTa
     encoder_model_audio: sonar_speech_encoder_eng
     input_modality: audiotext
+    fuse_emb_strategy: concat
     pretrained_model: xlm-roberta-base
     pool: avg
     layer: mix

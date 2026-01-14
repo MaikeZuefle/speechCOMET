@@ -610,11 +610,15 @@ class CometModel(ptl.LightningModule, metaclass=abc.ABCMeta):
             devices = "auto"
 
         sampler = SequentialSampler(samples)
+
         if length_batching and gpus < 2:
-            try:
-                sort_ids = np.argsort([len(sample["src"]) for sample in samples])
-            except KeyError:
-                sort_ids = np.argsort([len(sample["ref"]) for sample in samples])
+            if type(samples[0]["src_audio"]).__name__ == "AudioDecoder":
+                        sort_ids = np.argsort([sample["src_audio"].get_all_samples().data.shape[1] for sample in samples])
+            else:
+                try:
+                    sort_ids = np.argsort([len(sample["src"]) for sample in samples])
+                except KeyError:
+                    sort_ids = np.argsort([len(sample["ref"]) for sample in samples])
             sampler = OrderedSampler(sort_ids)
 
         # On Windows, only num_workers=0 is supported.

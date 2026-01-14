@@ -30,6 +30,8 @@ class SONAREncoder(Encoder):
 
         sonar_dim = self.model.model.encoder_pooler.projection_out.output_dim
         self.need_project = self.out_dim != sonar_dim
+
+
         if self.need_project:
             self.projection = torch.nn.Linear(sonar_dim, text_out_dim).to(device)
 

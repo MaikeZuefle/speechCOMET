@@ -81,8 +81,7 @@ class SpeechRegression(RegressionMetric):
         learning_rate: float = 1.5e-05,
         layerwise_decay: float = 0.95,
         encoder_model: str = "XLM-RoBERTa",
-        # change
-        encoder_model_audio: str = "XLM-RoBERTa",
+        encoder_model_audio: str = "sonar_speech_encoder_eng",
         pretrained_model: str = "xlm-roberta-large",
         pool: str = "avg",
         layer: Union[str, int] = "mix",
@@ -97,6 +96,7 @@ class SpeechRegression(RegressionMetric):
         activations: str = "Tanh",
         final_activation: Optional[str] = None,
         input_modality: str = "audio", # audio, audiotext
+        fuse_emb_strategy: str= "avg",
         load_pretrained_weights: bool = True,
         local_files_only: bool = False,
     ) -> None:
@@ -125,8 +125,9 @@ class SpeechRegression(RegressionMetric):
         )
         self.save_hyperparameters()
         self.input_modality = input_modality
+        self.fuse_emb_strategy = fuse_emb_strategy
 
-        if self.input_modality == "audio":
+        if self.input_modality in ["audio", "audiotext"]:
             # somehow self.device is cpu here, so set manually
             self.encoder_model_audio = SONAREncoder(encoder_model_audio, text_out_dim=self.encoder.output_units, device="cuda")
 
@@ -135,9 +136,16 @@ class SpeechRegression(RegressionMetric):
             else:
                 raise NotImplementedError()
 
+        if self.input_modality == "audiotext":
+            fusion_in_dim = self.encoder.output_units * 2
+            fusion_out_dim = self.encoder.output_units
+            if self.fuse_emb_strategy == "concat":
+                self.fusion_proj = torch.nn.Linear(fusion_in_dim, fusion_out_dim)
+            elif self.fuse_emb_strategy == "sum":
+                self.fusion_layernorm = torch.nn.LayerNorm(fusion_out_dim)
 
         self.estimator = FeedForward(
-            in_dim=self.encoder.output_units *4, # TODO: adjustment needed?
+            in_dim=self.encoder.output_units *4,
             hidden_sizes=self.hparams.hidden_sizes,
             activations=self.hparams.activations,
             dropout=self.hparams.dropout,
@@ -179,9 +187,6 @@ class SpeechRegression(RegressionMetric):
         if self.input_modality in ["audio", "audiotext"]:
             src_inputs.update({f"src_{k}": v for k, v in self.encoder_model_audio.prepare_sample(inputs["src_audio"]).items()})
 
-
-        #     src_inputs = self.encoder.prepare_sample(inputs["src"])
-        #     src_inputs = {"src_" + k: v for k, v in src_inputs.items()}
 
         mt_inputs = self.encoder.prepare_sample(inputs["mt"])
 
@@ -225,8 +230,17 @@ class SpeechRegression(RegressionMetric):
             waveforms = kwargs.pop("src_waveforms")
             src_sentemb = self.get_audio_embedding(waveforms)
         elif self.input_modality == "audiotext":
-            # what todo with audio + text? concat/average/...?
-            raise NotImplementedError()
+            text_emb = self.get_sentence_embedding(src_input_ids, src_attention_mask)
+            waveforms = kwargs.pop("src_waveforms")
+            audio_emb = self.get_audio_embedding(waveforms)
+
+            if self.fuse_emb_strategy == "concat":
+                src_sentemb = self.fusion_proj(torch.cat([text_emb, audio_emb], dim=-1))
+            elif self.fuse_emb_strategy == "sum":
+                src_sentemb = self.fusion_layernorm(text_emb + audio_emb)
+            elif self.fuse_emb_strategy == "avg":
+                src_sentemb = (text_emb + audio_emb) / 2
+
         else:
             raise NotImplementedError("Only audio, audiotext and text are supported.")
         mt_sentemb = self.get_sentence_embedding(mt_input_ids, mt_attention_mask)
