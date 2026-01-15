@@ -612,8 +612,12 @@ class CometModel(ptl.LightningModule, metaclass=abc.ABCMeta):
         sampler = SequentialSampler(samples)
 
         if length_batching and gpus < 2:
-            if type(samples[0]["src_audio"]).__name__ == "AudioDecoder":
+            
+            if "src_audio" in samples[0]:
+                if type(samples[0]["src_audio"]).__name__ == "AudioDecoder":
                         sort_ids = np.argsort([sample["src_audio"].get_all_samples().data.shape[1] for sample in samples])
+                else:
+                    sort_ids = np.argsort([len(sample["mt"]) for sample in samples])
             else:
                 try:
                     sort_ids = np.argsort([len(sample["src"]) for sample in samples])
