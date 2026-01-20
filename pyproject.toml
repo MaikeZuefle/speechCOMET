@@ -38,7 +38,7 @@ dependencies = [
     "torchcodec>=0.8.1",
     "sonar-space",
     "fairseq2",
-    "subset2evaluate >= 1.0.15",
+    "subset2evaluate >= 1.0.20",
     "tensorboard"
 ]
 
