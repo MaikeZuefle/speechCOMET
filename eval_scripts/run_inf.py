@@ -25,7 +25,7 @@ def run_eval(args):
         model = speechcomet.load_from_checkpoint(checkpoint)
         output_dir = args.model_folder
 
-    dataset = load_dataset(args.dataset)["dev"]
+    dataset = load_dataset(args.dataset)[args.split]
 
     # Collect all samples, preserving lang pair info for splitting later
     all_samples = []
@@ -58,11 +58,11 @@ def run_eval(args):
         grouped_outputs[lang_pair].append(output)
 
     for lang_pair in grouped_scores:
-        with open(f"{output_dir}/input_data_{lang_pair}.jsonl", "w", encoding="utf-8") as f:
+        with open(f"{output_dir}/input_data_{args.split}_{lang_pair}.jsonl", "w", encoding="utf-8") as f:
             for item in grouped_outputs[lang_pair]:
                 f.write(json.dumps(item, ensure_ascii=False) + "\n")
 
-        with open(f"{output_dir}/output_scores_{lang_pair}.jsonl", "w", encoding="utf-8") as f:
+        with open(f"{output_dir}/output_scores_{args.split}_{lang_pair}.jsonl", "w", encoding="utf-8") as f:
             for score in grouped_scores[lang_pair]:
                 f.write(json.dumps(score, ensure_ascii=False) + "\n")
 
@@ -92,6 +92,13 @@ if __name__ == "__main__":
         type=str,
         required=True,
         help="text or audio or audiotext"
+    )
+    parser.add_argument(
+        "--split",
+        type=str,
+        default="dev_asr",
+        choices=["dev", "dev_asr"],
+        help="Dataset split to evaluate on (default: dev_asr)"
     )
     args = parser.parse_args()
     if not args.hf_model and not args.model_folder:
