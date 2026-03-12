@@ -1,0 +1,181 @@
+from datasets import load_dataset
+import json
+import os
+import argparse
+from collections import defaultdict
+from tqdm import tqdm
+import torch
+import soundfile as sf
+import tempfile
+import re
+
+from transformers import Qwen2_5OmniForConditionalGeneration, Qwen2_5OmniProcessor
+from qwen_omni_utils import process_mm_info
+
+SYSTEM_PROMPT = "You are an evaluator. Given the source and/or audio and a translation, respond with only a single float score between 0 and 1 indicating translation quality. Output nothing else."
+
+def build_conversation_text(src_text, mt_text):
+    return [
+        {"role": "system", "content": [{"type": "text", "text": SYSTEM_PROMPT}]},
+        {"role": "user", "content": [
+            {"type": "text", "text": f"Source: {src_text}\nTranslation: {mt_text}"}
+        ]},
+    ]
+
+def build_conversation_audio(audio_array, sr, mt_text):
+    with tempfile.NamedTemporaryFile(suffix=".wav", delete=False) as tmp:
+        sf.write(tmp.name, audio_array, sr)
+        tmp_path = tmp.name
+    return [
+        {"role": "system", "content": [{"type": "text", "text": SYSTEM_PROMPT}]},
+        {"role": "user", "content": [
+            {"type": "audio", "audio": tmp_path},
+            {"type": "text", "text": f"Translation: {mt_text}"}
+        ]},
+    ], tmp_path
+
+def build_conversation_audiotext(audio_array, sr, src_text, mt_text):
+    with tempfile.NamedTemporaryFile(suffix=".wav", delete=False) as tmp:
+        sf.write(tmp.name, audio_array, sr)
+        tmp_path = tmp.name
+    return [
+        {"role": "system", "content": [{"type": "text", "text": SYSTEM_PROMPT}]},
+        {"role": "user", "content": [
+            {"type": "audio", "audio": tmp_path},
+            {"type": "text", "text": f"Source: {src_text}\nTranslation: {mt_text}"}
+        ]},
+    ], tmp_path
+
+
+def predict_scores_batch(model, processor, conversations_batch):
+    """Process a batch of conversations at once, returns list of floats."""
+    texts = [
+        processor.apply_chat_template(conv, add_generation_prompt=True, tokenize=False)
+        for conv in conversations_batch
+    ]
+
+    audios, images, videos = process_mm_info(conversations_batch, use_audio_in_video=False)
+
+    inputs = processor(
+        text=texts,
+        audio=audios,
+        images=images,
+        videos=videos,
+        return_tensors="pt", padding=True, use_audio_in_video=False
+    )
+    inputs = inputs.to(model.device).to(model.dtype)
+
+    input_len = inputs["input_ids"].shape[1]
+
+    with torch.no_grad():
+        text_ids = model.generate(**inputs, use_audio_in_video=False, max_new_tokens=16, return_audio=False)
+
+    text_ids = text_ids[:, input_len:]
+    decoded = processor.batch_decode(text_ids, skip_special_tokens=True, clean_up_tokenization_spaces=False)
+
+    scores = []
+    for raw in decoded:
+        raw = raw.strip()
+        try:
+            scores.append(float(raw))
+        except ValueError:
+            match = re.search(r"\d+\.?\d*", raw)
+            scores.append(float(match.group()) if match else 0.0)
+    return scores
+
+
+def run_eval(args):
+    print(f"Loading model: {args.model_name}")
+    model = Qwen2_5OmniForConditionalGeneration.from_pretrained(
+        args.model_name, torch_dtype="auto", device_map="auto"
+    )
+    processor = Qwen2_5OmniProcessor.from_pretrained(args.model_name)
+
+    output_dir = args.model_name.replace("/", "_")
+    os.makedirs(output_dir, exist_ok=True)
+
+    dataset = load_dataset(args.dataset)[args.split]
+
+    grouped_scores = defaultdict(list)
+    grouped_outputs = defaultdict(list)
+
+    all_entries = []
+    text_convs = []
+    audio_convs = []
+    audiotext_convs = []
+    tmp_files = []
+
+    for entry in tqdm(dataset, desc="Building conversations"):
+        src_text = entry["src_text"]
+        mt_text = entry["tgt_text"]
+        audio_array = entry["audio"]["array"]
+        sr = entry["audio"]["sampling_rate"]
+
+        text_convs.append(build_conversation_text(src_text, mt_text))
+
+        audio_conv, tmp1 = build_conversation_audio(audio_array, sr, mt_text)
+        audio_convs.append(audio_conv)
+        tmp_files.append(tmp1)
+
+        audiotext_conv, tmp2 = build_conversation_audiotext(audio_array, sr, src_text, mt_text)
+        audiotext_convs.append(audiotext_conv)
+        tmp_files.append(tmp2)
+
+        lang_pair = f"{entry['src_lang']}-{entry['tgt_lang']}"
+        output = {k: v for k, v in entry.items() if k != "audio"}
+        all_entries.append((lang_pair, output))
+
+    BATCH_SIZE = 1
+
+    def run_batched(convs, desc):
+        scores = []
+        for batch_start in tqdm(range(0, len(convs), BATCH_SIZE), desc=desc):
+            batch = convs[batch_start:batch_start + BATCH_SIZE]
+            scores.extend(predict_scores_batch(model, processor, batch))
+        return scores
+
+    text_scores      = run_batched(text_convs,      "Scoring text")
+    torch.cuda.empty_cache()
+    audio_scores     = run_batched(audio_convs,     "Scoring audio")
+    torch.cuda.empty_cache()
+    audiotext_scores = run_batched(audiotext_convs, "Scoring audiotext")
+    torch.cuda.empty_cache()
+
+    for path in tmp_files:
+        os.unlink(path)
+
+    for (lang_pair, output), ts, as_, ats in zip(all_entries, text_scores, audio_scores, audiotext_scores):
+        grouped_scores[lang_pair].append({"text": ts, "audio": as_, "audiotext": ats})
+        grouped_outputs[lang_pair].append(output)
+
+    for lang_pair in grouped_scores:
+        with open(f"{output_dir}/input_data_{args.split}_{lang_pair}.jsonl", "w", encoding="utf-8") as f:
+            for item in grouped_outputs[lang_pair]:
+                f.write(json.dumps(item, ensure_ascii=False) + "\n")
+
+        with open(f"{output_dir}/output_scores_{args.split}_{lang_pair}_text.jsonl", "w", encoding="utf-8") as f:
+            for score in grouped_scores[lang_pair]:
+                f.write(json.dumps(score["text"], ensure_ascii=False) + "\n")
+
+        with open(f"{output_dir}/output_scores_{args.split}_{lang_pair}_audio.jsonl", "w", encoding="utf-8") as f:
+            for score in grouped_scores[lang_pair]:
+                f.write(json.dumps(score["audio"], ensure_ascii=False) + "\n")
+
+        with open(f"{output_dir}/output_scores_{args.split}_{lang_pair}_audiotext.jsonl", "w", encoding="utf-8") as f:
+            for score in grouped_scores[lang_pair]:
+                f.write(json.dumps(score["audiotext"], ensure_ascii=False) + "\n")
+
+    print(f"Done. Results saved to {output_dir}/")
+
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--model-name", type=str, default="Qwen/Qwen2.5-Omni-7B",
+                        help="HuggingFace model name")
+    parser.add_argument("--dataset", type=str, required=True,
+                        help="HuggingFace dataset name")
+    parser.add_argument("--split", type=str, default="dev_asr",
+                        choices=["dev", "dev_asr"],
+                        help="Dataset split to evaluate on (default: dev_asr)")
+    args = parser.parse_args()
+    run_eval(args)

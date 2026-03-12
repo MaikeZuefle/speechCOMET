@@ -44,6 +44,8 @@ class SONAREncoder(Encoder):
             if type(item).__name__ == "AudioDecoder": # HF encoded audio
                 samples = item.get_all_samples()
                 waveform = samples.data            # torch.Tensor (channels × samples)
+                if waveform.shape[0] > 1:
+                    waveform = waveform.mean(dim=0, keepdim=True)
                 sr = samples.sample_rate
             else:
                 waveform, sr = torchaudio.load(str(item))
@@ -57,7 +59,7 @@ class SONAREncoder(Encoder):
     def forward(
         self, inputs: torch.Tensor, **kwargs
     ) -> Dict[str, torch.Tensor]:
-        sonar_emb = self.model.predict(inputs).clone().detach().requires_grad_(False) # torch.Size([batch_size, 1024])
+        sonar_emb = self.model.predict(inputs).clone() #.detach().requires_grad_(False) # torch.Size([batch_size, 1024])
         if self.need_project:
             sonar_emb = self.projection(sonar_emb)
         return sonar_emb

@@ -254,6 +254,43 @@ class SpeechRegression(RegressionMetric):
         return Prediction(score=self.estimator(embedded_sequences).view(-1))
 
 
+    def _load_hf_dataset(self):
+        if hasattr(self, '_hf_dataset_cache'):
+            return self._hf_dataset_cache
+        
+        from datasets import load_dataset
+        from collections import Counter
+        rng = random.Random(SEED)
+
+        dataset = load_dataset("maikezu/iwslt2026-metrics-shared-train-dev")["train"]
+        dataset = dataset.rename_columns({
+            "src_text": "src",
+            "tgt_text": "mt",
+            "audio": "src_audio",
+        })
+        dataset = dataset.remove_columns(
+            [c for c in dataset.column_names if c not in {"src", "mt", "score", "src_audio"}]
+        )
+
+        src_items = list(Counter(dataset["src"]).items())
+        rng.shuffle(src_items)
+
+        TARGET = 1700
+        dev_srcs, count = set(), 0
+        for src, size in src_items:
+            if count + size > TARGET:
+                continue
+            dev_srcs.add(src)
+            count += size
+            if count >= TARGET:
+                break
+
+        train_indices = [i for i, src in enumerate(dataset["src"]) if src not in dev_srcs]
+        dev_indices   = [i for i, src in enumerate(dataset["src"]) if src in dev_srcs]
+
+        self._hf_dataset_cache = (dataset.select(train_indices), dataset.select(dev_indices))
+        return self._hf_dataset_cache
+
 
     def read_training_data(self, path: str) -> List[dict]:
         """Method that reads the training data (a csv file) and returns a list of
@@ -271,43 +308,7 @@ class SpeechRegression(RegressionMetric):
             df["score"] = df["score"].astype("float16")
             return df.to_dict("records")
         else:
-            from datasets import load_dataset
-            from collections import Counter
-            rng = random.Random(SEED)
-
-            dataset = load_dataset("maikezu/iwslt2026-metrics-shared-train-dev")["train"]
-            dataset = dataset.rename_columns({
-                "src_text": "src",
-                "tgt_text": "mt",
-                "audio": "src_audio",
-            })
-            dataset = dataset.remove_columns(
-                [c for c in dataset.column_names if c not in {"src", "mt", "score", "src_audio"}]
-            )
-
-
-            # remove examples for dev set
-            src_items = list(Counter(dataset["src"]).items())
-            rng.shuffle(src_items)
-
-            TARGET = 1700
-            dev_srcs = set()
-            count = 0
-
-            for src, size in src_items:
-                if count + size > TARGET:  # soft cap
-                    continue
-                dev_srcs.add(src)
-                count += size
-                if count >= TARGET:
-                    break
-
-            train_indices = [
-                i for i, src in enumerate(dataset["src"])
-                if src not in set(dev_srcs)
-            ]
-
-            train_dataset = dataset.select(train_indices)
+            train_dataset, _ = self._load_hf_dataset()
             return train_dataset
 
 
@@ -329,41 +330,5 @@ class SpeechRegression(RegressionMetric):
             df["src_audio"] = df["src_audio"].astype(str) 
             return df.to_dict("records")
         else:
-            from datasets import load_dataset
-            from collections import Counter
-            rng = random.Random(SEED)
-
-            dataset = load_dataset("maikezu/iwslt2026-metrics-shared-train-dev")["train"]
-            dataset = dataset.rename_columns({
-                "src_text": "src",
-                "tgt_text": "mt",
-                "audio": "src_audio",
-            })
-            dataset = dataset.remove_columns(
-                [c for c in dataset.column_names if c not in {"src", "mt", "score", "src_audio"}]
-            )
-
-
-            # remove examples for dev set
-            src_items = list(Counter(dataset["src"]).items())
-            rng.shuffle(src_items)
-
-            TARGET = 1700
-            dev_srcs = set()
-            count = 0
-
-            for src, size in src_items:
-                if count + size > TARGET:  # soft cap
-                    continue
-                dev_srcs.add(src)
-                count += size
-                if count >= TARGET:
-                    break
-
-            dev_indices = [
-                i for i, src in enumerate(dataset["src"])
-                if src in set(dev_srcs)
-            ]
-
-            dev_dateset = dataset.select(dev_indices)
-            return dev_dateset
+            _, dev_dataset = self._load_hf_dataset()
+            return dev_dataset

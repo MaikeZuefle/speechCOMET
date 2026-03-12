@@ -96,7 +96,7 @@ def initialize_trainer(configs, version=None) -> Trainer:
     trainer_args["callbacks"] = [
         early_stop_callback, checkpoint_callback, lr_monitor]
     print("TRAINER ARGUMENTS: ")
-    logger = TensorBoardLogger("", version=version)
+    logger = TensorBoardLogger("trained_models", name="", version=version)    
     trainer_args["logger"] = logger
     print(json.dumps(trainer_args, indent=4, default=lambda x: x.__dict__))
     trainer = Trainer(**trainer_args)

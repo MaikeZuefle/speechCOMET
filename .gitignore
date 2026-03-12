@@ -140,3 +140,4 @@ default/
 eval_scripts/iwslt26-metrics
 unbabel_wmt22_cometkiwi_da
 requirements.txt
+trained_models

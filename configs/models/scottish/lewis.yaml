@@ -22,6 +22,7 @@ speech_regression_metric:
       - data/dev/text_dev.csv
     
       
-trainer: ../trainer.yaml
-early_stopping: ../early_stopping.yaml
-model_checkpoint: ../model_checkpoint.yaml
+      
+trainer: ../../trainer.yaml
+early_stopping: ../../early_stopping.yaml
+model_checkpoint: ../../model_checkpoint.yaml

@@ -1,0 +1,1 @@
+python generate_qwen_omni.py --dataset maikezu/scottish-metrics --split dev_asr

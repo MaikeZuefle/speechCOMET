@@ -24,6 +24,7 @@ speech_regression_metric:
       - maikezu/iwslt2026-metrics-shared-train-dev
     
       
-trainer: ../trainer.yaml
-early_stopping: ../early_stopping.yaml
-model_checkpoint: ../model_checkpoint.yaml
+      
+trainer: ../../trainer.yaml
+early_stopping: ../../early_stopping.yaml
+model_checkpoint: ../../model_checkpoint.yaml
