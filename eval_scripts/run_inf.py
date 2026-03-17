@@ -41,6 +41,8 @@ def run_eval(args):
             sample = {"src_audio": entry["audio"], "mt": entry["tgt_text"]}
         elif args.modality in ("textaudio", "audiotext"):
             sample = {"src_audio": entry["audio"], "src": entry["src_text"], "mt": entry["tgt_text"]}
+        else:
+            raise NotImplementedError
 
         all_samples.append(sample)
         all_lang_pairs.append(lang_pair)

@@ -23,11 +23,13 @@ from typing import Dict, List, Optional, Tuple, Union
 
 import pandas as pd
 import torch
+from transformers.optimization import Adafactor, get_constant_schedule_with_warmup
 
 from speechcomet.models.regression.regression_metric import RegressionMetric
 from speechcomet.models.utils import Prediction, Target
 from speechcomet.modules import FeedForward
 from speechcomet.encoders.sonar import SONAREncoder
+from speechcomet.encoders.whisper import WhisperEncoder
 
 import random
 SEED = 42
@@ -74,7 +76,9 @@ class SpeechRegression(RegressionMetric):
     def __init__(
         self,
         nr_frozen_epochs: Union[float, int] = 0.3,
-        keep_embeddings_frozen: bool = True,
+        keep_trg_embeddings_frozen: bool = True,
+        keep_src_embeddings_frozen: bool = True,
+        keep_embeddings_frozen: Optional[bool] = None,
         optimizer: str = "AdamW",
         warmup_steps: int = 0,
         encoder_learning_rate: float = 1e-06,
@@ -96,13 +100,24 @@ class SpeechRegression(RegressionMetric):
         activations: str = "Tanh",
         final_activation: Optional[str] = None,
         input_modality: str = "audio", # audio, audiotext
-        fuse_emb_strategy: str= "avg",
+        fuse_emb_strategy: str = "avg",
+        pool_audio: str = "avg",  # pooling for sequence-based audio encoders (e.g. Whisper)
+        lora_r: int = 8,
+        lora_alpha: int = 16,
+        lora_dropout: float = 0.0,
         load_pretrained_weights: bool = True,
         local_files_only: bool = False,
     ) -> None:
+        if keep_embeddings_frozen is not None:
+            raise ValueError(
+                "keep_embeddings_frozen is ambiguous for SpeechRegression. "
+                "Use keep_trg_embeddings_frozen (text/XLM-R embedding layer) "
+                "and keep_src_embeddings_frozen (audio encoder) instead."
+            )
+
         super(RegressionMetric, self).__init__(
             nr_frozen_epochs=nr_frozen_epochs,
-            keep_embeddings_frozen=keep_embeddings_frozen,
+            keep_embeddings_frozen=keep_trg_embeddings_frozen,
             optimizer=optimizer,
             warmup_steps=warmup_steps,
             encoder_learning_rate=encoder_learning_rate,
@@ -129,12 +144,27 @@ class SpeechRegression(RegressionMetric):
 
         if self.input_modality in ["audio", "audiotext"]:
             # somehow self.device is cpu here, so set manually
-            self.encoder_model_audio = SONAREncoder(encoder_model_audio, text_out_dim=self.encoder.output_units, device="cuda")
-
-            if keep_embeddings_frozen:
-                self.encoder_model_audio.freeze_embeddings()
+            if encoder_model_audio.startswith("sonar_"):
+                self.encoder_model_audio = SONAREncoder(
+                    encoder_model_audio, text_out_dim=self.encoder.output_units, device="cuda"
+                )
             else:
-                raise NotImplementedError()
+                self.encoder_model_audio = WhisperEncoder(
+                    encoder_model_audio, text_out_dim=self.encoder.output_units, device="cuda", pool=pool_audio
+                )
+
+            if keep_src_embeddings_frozen:
+                self.encoder_model_audio.freeze_embeddings()
+            elif isinstance(self.encoder_model_audio, SONAREncoder):
+                raise NotImplementedError(
+                    "Fine-tuning the SONAR encoder is not supported. "
+                    "Set keep_src_embeddings_frozen: True."
+                )
+            else:
+                # Whisper: apply LoRA — only small adapter weights are trained
+                self.encoder_model_audio.apply_lora(
+                    r=lora_r, alpha=lora_alpha, dropout=lora_dropout
+                )
 
         if self.input_modality == "audiotext":
             fusion_in_dim = self.encoder.output_units * 2
@@ -156,7 +186,71 @@ class SpeechRegression(RegressionMetric):
 
     def requires_references(self) -> bool:
         return False
-    
+
+    def configure_optimizers(
+        self,
+    ) -> Tuple[List[torch.optim.Optimizer], List[torch.optim.lr_scheduler.LambdaLR]]:
+        """Pytorch Lightning method to configure optimizers and schedulers."""
+        layer_parameters = self.encoder.layerwise_lr(
+            self.hparams.encoder_learning_rate, self.hparams.layerwise_decay
+        )
+        top_layers_parameters = [
+            {"params": self.estimator.parameters(), "lr": self.hparams.learning_rate}
+        ]
+        if self.input_modality in ["audio", "audiotext"]:
+            if self.encoder_model_audio.need_project:
+                top_layers_parameters.append(
+                    {"params": self.encoder_model_audio.projection.parameters(), "lr": self.hparams.learning_rate}
+                )
+            if hasattr(self.encoder_model_audio, "attn_pool"):
+                top_layers_parameters.append(
+                    {"params": self.encoder_model_audio.attn_pool.parameters(), "lr": self.hparams.learning_rate}
+                )
+            if self.encoder_model_audio.lora_enabled:
+                lora_params = [p for p in self.encoder_model_audio.model.parameters() if p.requires_grad]
+                top_layers_parameters.append(
+                    {"params": lora_params, "lr": self.hparams.encoder_learning_rate}
+                )
+        if self.input_modality == "audiotext":
+            fusion_params = []
+            if self.fuse_emb_strategy == "concat":
+                fusion_params = list(self.fusion_proj.parameters())
+            elif self.fuse_emb_strategy == "sum":
+                fusion_params = list(self.fusion_layernorm.parameters())
+            if fusion_params:
+                top_layers_parameters.append(
+                    {"params": fusion_params, "lr": self.hparams.learning_rate}
+                )
+        if self.layerwise_attention:
+            layerwise_attn_params = [
+                {
+                    "params": self.layerwise_attention.parameters(),
+                    "lr": self.hparams.learning_rate,
+                }
+            ]
+            params = layer_parameters + top_layers_parameters + layerwise_attn_params
+        else:
+            params = layer_parameters + top_layers_parameters
+
+        if self.hparams.optimizer == "Adafactor":
+            optimizer = Adafactor(
+                params,
+                lr=self.hparams.learning_rate,
+                relative_step=False,
+                scale_parameter=False,
+            )
+        else:
+            optimizer = torch.optim.AdamW(params, lr=self.hparams.learning_rate)
+
+        if self.hparams.warmup_steps < 2:
+            return [optimizer], []
+
+        scheduler = get_constant_schedule_with_warmup(
+            optimizer=optimizer,
+            num_warmup_steps=self.hparams.warmup_steps,
+        )
+        return [optimizer], [scheduler]
+
     def enable_context(self):
         if self.pool == "avg":
             self.use_context = True

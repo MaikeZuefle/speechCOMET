@@ -41,7 +41,9 @@ dependencies = [
     "entmax==1.3",
     "sonar-space==0.5.0",
     "tensorboard==2.20.0",
-    "subset2evaluate==1.0.26"    
+    "subset2evaluate==1.0.26",
+    "accelerate==1.13.0",
+    "peft==0.18.1",    
 ]
 
 [project.urls]

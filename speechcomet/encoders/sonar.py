@@ -35,6 +35,8 @@ class SONAREncoder(Encoder):
         if self.need_project:
             self.projection = torch.nn.Linear(sonar_dim, text_out_dim).to(device)
 
+    lora_enabled = False  # SONAR does not support LoRA
+
     def prepare_sample(self, audios):
         from datasets.features._torchcodec import AudioDecoder
         import torchaudio

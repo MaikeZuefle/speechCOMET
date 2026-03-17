@@ -1,13 +1,13 @@
 #!/bin/bash
 
-MODEL_NAME=speech_text_hf_data # or shetland, skye ...
-MODALITY=text
+MODEL_NAME=orkney-sum # or shetland, skye ...
+MODALITY=textaudio
 SPLIT=dev_asr  # dev or dev_asr
 HF=false  # true if it's a model from HF
 
 
 # define paths
-CHECKPOINT_FOLDER=default # ignore if it's HF model
+CHECKPOINT_FOLDER=trained_models # ignore if it's HF model
 HF_USER=maikezu # ignore if it's local model
 
 

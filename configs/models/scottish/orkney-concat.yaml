@@ -2,7 +2,8 @@ speech_regression_metric:
   class_path: speechcomet.models.SpeechRegression
   init_args:
     nr_frozen_epochs: 0.3
-    keep_embeddings_frozen: True
+    keep_trg_embeddings_frozen: True
+    keep_src_embeddings_frozen: True
     optimizer: AdamW
     encoder_learning_rate: 1.0e-06
     learning_rate: 1.5e-05
@@ -24,6 +25,6 @@ speech_regression_metric:
       - maikezu/iwslt2026-metrics-shared-train-dev
       
       
-trainer: ../../trainer.yaml
+trainer: ../../trainer_orkney.yaml
 early_stopping: ../../early_stopping.yaml
 model_checkpoint: ../../model_checkpoint.yaml
