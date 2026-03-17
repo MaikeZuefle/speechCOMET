@@ -109,11 +109,9 @@ class SpeechRegression(RegressionMetric):
         local_files_only: bool = False,
     ) -> None:
         if keep_embeddings_frozen is not None:
-            raise ValueError(
-                "keep_embeddings_frozen is ambiguous for SpeechRegression. "
-                "Use keep_trg_embeddings_frozen (text/XLM-R embedding layer) "
-                "and keep_src_embeddings_frozen (audio encoder) instead."
-            )
+            # Backward compatibility: old checkpoints saved keep_embeddings_frozen
+            keep_trg_embeddings_frozen = keep_embeddings_frozen
+            keep_src_embeddings_frozen = keep_embeddings_frozen
 
         super(RegressionMetric, self).__init__(
             nr_frozen_epochs=nr_frozen_epochs,
