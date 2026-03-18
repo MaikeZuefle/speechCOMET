@@ -1,7 +1,7 @@
 #!/bin/bash
 
-MODEL_NAME=orkney-sum # or shetland, skye ...
-MODALITY=textaudio
+MODEL_NAME=orkney-sum-from-text-ckpt # or shetland, skye ...
+MODALITY=audiotext
 SPLIT=dev_asr  # dev or dev_asr
 HF=false  # true if it's a model from HF
 

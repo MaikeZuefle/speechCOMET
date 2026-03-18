@@ -4,17 +4,19 @@ import os
 import shutil
 import tempfile
 from huggingface_hub import HfApi
+from tqdm import tqdm
 
 api = HfApi()
 
-shetland = "default/speech_audio_from_text_checkpoint"
-harris = "default/speech_audio"
-skye = "default/speech_text_hf_data"
-lewis = "default/speech_text"
+TRAINED_MODELS_DIR = "trained_models"
 
-models = {"shetland": shetland, "harris": harris, "skye": skye, "lewis": lewis}
+models = {
+    name: os.path.join(TRAINED_MODELS_DIR, name)
+    for name in sorted(os.listdir(TRAINED_MODELS_DIR))
+    if glob.glob(os.path.join(TRAINED_MODELS_DIR, name, "checkpoints", "epoch=*-*.ckpt"))
+}
 
-for model_name, model_path in models.items():
+for model_name, model_path in tqdm(models.items(), desc="Uploading models"):
     ckpt_dir = os.path.join(model_path, "checkpoints")
     matches = glob.glob(os.path.join(ckpt_dir, "epoch=*-*.ckpt"))
     last_checkpoint = max(

@@ -394,9 +394,11 @@ class SpeechRegression(RegressionMetric):
         if path.endswith(".csv"):
             df = pd.read_csv(path)
             df = df[["src", "mt", "score", "src_audio"]]
+            df = df.dropna(subset=["src", "mt"])
+            df = df[(df["src"].astype(str).str.strip() != "") & (df["mt"].astype(str).str.strip() != "")]
             df["src"] = df["src"].astype(str)
             df["mt"] = df["mt"].astype(str)
-            df["src_audio"] = df["src_audio"].astype(str) 
+            df["src_audio"] = df["src_audio"].astype(str)
             df["score"] = df["score"].astype("float16")
             return df.to_dict("records")
         else:
@@ -413,13 +415,13 @@ class SpeechRegression(RegressionMetric):
         """
         if path.endswith(".csv"):
             df = pd.read_csv(path)
-            columns = ["src", "mt", "score", "src_audio"]
-
-            df = df[columns]
+            df = df[["src", "mt", "score", "src_audio"]]
+            df = df.dropna(subset=["src", "mt"])
+            df = df[(df["src"].astype(str).str.strip() != "") & (df["mt"].astype(str).str.strip() != "")]
             df["score"] = df["score"].astype("float16")
             df["src"] = df["src"].astype(str)
             df["mt"] = df["mt"].astype(str)
-            df["src_audio"] = df["src_audio"].astype(str) 
+            df["src_audio"] = df["src_audio"].astype(str)
             return df.to_dict("records")
         else:
             _, dev_dataset = self._load_hf_dataset()
