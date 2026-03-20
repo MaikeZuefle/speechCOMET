@@ -11,7 +11,7 @@ speech_regression_metric:
     encoder_model: XLM-RoBERTa
     encoder_model_audio: sonar_speech_encoder_eng
     input_modality: audiotext
-    fuse_emb_strategy: concat
+    fuse_emb_strategy: avg
     pretrained_model: xlm-roberta-base
     pool: avg
     layer: mix
@@ -25,6 +25,6 @@ speech_regression_metric:
       - maikezu/iwslt2026-metrics-shared-train-dev
       
       
-trainer: ../../trainer_orkney_10ep.yaml
+trainer: ../../trainer_orkney_20ep.yaml
 early_stopping: ../../early_stopping.yaml
 model_checkpoint: ../../model_checkpoint.yaml

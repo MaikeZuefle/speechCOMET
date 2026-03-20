@@ -9,9 +9,7 @@ speech_regression_metric:
     learning_rate: 1.5e-05
     layerwise_decay: 0.95
     encoder_model: XLM-RoBERTa
-    encoder_model_audio: openai/whisper-small
-    input_modality: audio
-    pool_audio: avg
+    input_modality: text
     pretrained_model: xlm-roberta-base
     pool: avg
     layer: mix
@@ -21,12 +19,11 @@ speech_regression_metric:
     batch_size: 2
     train_data: 
       - maikezu/iwslt2026-metrics-shared-train-dev
-    
     validation_data:
       - maikezu/iwslt2026-metrics-shared-train-dev
     
       
       
-trainer: ../../trainer_10ep.yaml
+trainer: ../../trainer_20ep.yaml
 early_stopping: ../../early_stopping.yaml
 model_checkpoint: ../../model_checkpoint.yaml
