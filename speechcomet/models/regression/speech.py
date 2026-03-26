@@ -346,15 +346,15 @@ class SpeechRegression(RegressionMetric):
         return Prediction(score=self.estimator(embedded_sequences).view(-1))
 
 
-    def _load_hf_dataset(self):
-        if hasattr(self, '_hf_dataset_cache'):
-            return self._hf_dataset_cache
-        
+    def _load_hf_dataset(self, path: str):
+        if hasattr(self, '_hf_dataset_cache') and self._hf_dataset_cache[0] == path:
+            return self._hf_dataset_cache[1]
+
         from datasets import load_dataset
         from collections import Counter
         rng = random.Random(SEED)
 
-        dataset = load_dataset("maikezu/iwslt2026-metrics-shared-train-dev")["train"]
+        dataset = load_dataset(path)["train"]
         dataset = dataset.rename_columns({
             "src_text": "src",
             "tgt_text": "mt",
@@ -380,8 +380,8 @@ class SpeechRegression(RegressionMetric):
         train_indices = [i for i, src in enumerate(dataset["src"]) if src not in dev_srcs]
         dev_indices   = [i for i, src in enumerate(dataset["src"]) if src in dev_srcs]
 
-        self._hf_dataset_cache = (dataset.select(train_indices), dataset.select(dev_indices))
-        return self._hf_dataset_cache
+        self._hf_dataset_cache = (path, (dataset.select(train_indices), dataset.select(dev_indices)))
+        return self._hf_dataset_cache[1]
 
 
     def read_training_data(self, path: str) -> List[dict]:
@@ -402,7 +402,7 @@ class SpeechRegression(RegressionMetric):
             df["score"] = df["score"].astype("float16")
             return df.to_dict("records")
         else:
-            train_dataset, _ = self._load_hf_dataset()
+            train_dataset, _ = self._load_hf_dataset(path)
             return train_dataset
 
 
@@ -424,5 +424,5 @@ class SpeechRegression(RegressionMetric):
             df["src_audio"] = df["src_audio"].astype(str)
             return df.to_dict("records")
         else:
-            _, dev_dataset = self._load_hf_dataset()
+            _, dev_dataset = self._load_hf_dataset(path)
             return dev_dataset
