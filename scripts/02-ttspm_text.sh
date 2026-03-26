@@ -1,0 +1,1 @@
+python scripts/02-ttspm_text.py
