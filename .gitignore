@@ -144,3 +144,4 @@ trained_models
 speechllm-baselines/Qwen_Qwen2.5-Omni-7B
 myjob_eval.sh
 .claude/
+myjob_kokoro.sh
