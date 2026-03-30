@@ -354,33 +354,46 @@ class SpeechRegression(RegressionMetric):
         from collections import Counter
         rng = random.Random(SEED)
 
-        dataset = load_dataset(path)["train"]
-        dataset = dataset.rename_columns({
-            "src_text": "src",
-            "tgt_text": "mt",
-            "audio": "src_audio",
-        })
-        dataset = dataset.remove_columns(
-            [c for c in dataset.column_names if c not in {"src", "mt", "score", "src_audio"}]
-        )
+        hf_dataset = load_dataset(path)
 
-        src_items = list(Counter(dataset["src"]).items())
-        rng.shuffle(src_items)
+        def prepare(ds):
+            ds = ds.rename_columns({
+                "src_text": "src",
+                "tgt_text": "mt",
+                "audio": "src_audio",
+            })
+            ds = ds.remove_columns(
+                [c for c in ds.column_names if c not in {"src", "mt", "score", "src_audio"}]
+            )
+            # SONAR max: 4096 frames × 160 samples @ 16kHz, converted to dataset sample rate
+            max_samples = 4096 * 160 * ds.features["src_audio"].sampling_rate // 16000
+            before = len(ds)
+            ds = ds.filter(lambda x: len(x["src_audio"]["array"]) <= max_samples)
+            print(f"Filtered {before - len(ds)} samples exceeding SONAR max audio length")
+            return ds
 
-        TARGET = 1700
-        dev_srcs, count = set(), 0
-        for src, size in src_items:
-            if count + size > TARGET:
-                continue
-            dev_srcs.add(src)
-            count += size
-            if count >= TARGET:
-                break
+        if "validation" in hf_dataset:
+            train_dataset = prepare(hf_dataset["train"])
+            dev_dataset   = prepare(hf_dataset["validation"])
+        else:
+            dataset = prepare(hf_dataset["train"])
+            TARGET = int(len(dataset) * 0.05)
+            src_items = list(Counter(dataset["src"]).items())
+            rng.shuffle(src_items)
+            dev_srcs, count = set(), 0
+            for src, size in src_items:
+                if count + size > TARGET:
+                    continue
+                dev_srcs.add(src)
+                count += size
+                if count >= TARGET:
+                    break
+            train_indices = [i for i, src in enumerate(dataset["src"]) if src not in dev_srcs]
+            dev_indices   = [i for i, src in enumerate(dataset["src"]) if src in dev_srcs]
+            train_dataset = dataset.select(train_indices)
+            dev_dataset   = dataset.select(dev_indices)
 
-        train_indices = [i for i, src in enumerate(dataset["src"]) if src not in dev_srcs]
-        dev_indices   = [i for i, src in enumerate(dataset["src"]) if src in dev_srcs]
-
-        self._hf_dataset_cache = (path, (dataset.select(train_indices), dataset.select(dev_indices)))
+        self._hf_dataset_cache = (path, (train_dataset, dev_dataset))
         return self._hf_dataset_cache[1]
 
 
