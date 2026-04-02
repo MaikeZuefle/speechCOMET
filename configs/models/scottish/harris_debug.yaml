@@ -18,12 +18,11 @@ speech_regression_metric:
     layer_norm: False
     dropout: 0.1
     batch_size: 2
-    num_workers: 0
     train_data: 
-      - maikezu/ben_nevis_tts
+      - maikezu/iwslt2026-metrics-shared-train-dev
     
     validation_data:
-      - maikezu/ben_nevis_tts
+      - maikezu/iwslt2026-metrics-shared-train-dev
     
       
       

@@ -115,6 +115,7 @@ class CometModel(ptl.LightningModule, metaclass=abc.ABCMeta):
         class_identifier: Optional[str] = None,
         load_pretrained_weights: bool = True,
         local_files_only: bool = False,
+        num_workers: Optional[int] = None,
     ) -> None:
         super().__init__()
         self.save_hyperparameters()
@@ -530,7 +531,7 @@ class CometModel(ptl.LightningModule, metaclass=abc.ABCMeta):
             sampler=RandomSampler(train_dataset),
             batch_size=self.hparams.batch_size,
             collate_fn=lambda s: self.prepare_sample(s, stage="fit"),
-            num_workers=2 * self.trainer.devices,
+            num_workers=self.hparams.num_workers if self.hparams.num_workers is not None else 2 * self.trainer.devices,
         )
 
     def val_dataloader(self) -> DataLoader:
@@ -540,7 +541,7 @@ class CometModel(ptl.LightningModule, metaclass=abc.ABCMeta):
                 dataset=self.train_subset,
                 batch_size=self.hparams.batch_size,
                 collate_fn=lambda s: self.prepare_sample(s, stage="validate"),
-                num_workers=2 * self.trainer.devices,
+                num_workers=self.hparams.num_workers if self.hparams.num_workers is not None else 2 * self.trainer.devices,
             )
         ]
         for validation_set in self.validation_sets:
@@ -549,7 +550,7 @@ class CometModel(ptl.LightningModule, metaclass=abc.ABCMeta):
                     dataset=validation_set,
                     batch_size=self.hparams.batch_size,
                     collate_fn=lambda s: self.prepare_sample(s, stage="validate"),
-                    num_workers=2 * self.trainer.devices,
+                    num_workers=self.hparams.num_workers if self.hparams.num_workers is not None else 2 * self.trainer.devices,
                 )
             )
         return val_data

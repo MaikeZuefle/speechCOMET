@@ -1,12 +1,14 @@
 #!/bin/bash
 
 MODEL_NAMES=(
-    mull-attn-10ep
-    mull-attn-lora-10ep
-    mull-avg-10ep
-    mull-avg-lora-10ep
+    # mull-attn-10ep
+    # mull-attn-lora-10ep
+    # mull-avg-20ep
+    # mull-avg-lora-10ep
     # shetland
     # skye
+    # shetland-20ep
+    harris-20ep-continue
 )
 MODALITY=audio
 SPLIT=dev_asr  # dev or dev_asr
@@ -46,4 +48,11 @@ for MODEL_NAME in "${MODEL_NAMES[@]}"; do
         python evaluation/__main__.py -i "$input_file" -m "$scores_file"
     done
     cd ../..
+
+    # WER correlation analysis (only meaningful for dev_asr)
+    if [ "$SPLIT" = "dev_asr" ]; then
+        python eval_scripts/04-wer_correlation_analysis.py \
+            --model-dir $OUTPUT_DIR \
+            --split $SPLIT
+    fi
 done

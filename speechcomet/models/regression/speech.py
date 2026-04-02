@@ -107,6 +107,7 @@ class SpeechRegression(RegressionMetric):
         lora_dropout: float = 0.0,
         load_pretrained_weights: bool = True,
         local_files_only: bool = False,
+        num_workers: Optional[int] = None,
     ) -> None:
         if keep_embeddings_frozen is not None:
             # Backward compatibility: old checkpoints saved keep_embeddings_frozen
@@ -365,11 +366,17 @@ class SpeechRegression(RegressionMetric):
             ds = ds.remove_columns(
                 [c for c in ds.column_names if c not in {"src", "mt", "score", "src_audio"}]
             )
-            # SONAR max: 4096 frames × 160 samples @ 16kHz, converted to dataset sample rate
-            max_samples = 4096 * 160 * ds.features["src_audio"].sampling_rate // 16000
+            # Filter samples that would exceed SONAR's 4096 frame limit
+            # SONAR uses fbank (10ms hop = 160 samples at 16kHz) + fbank_stride=2 → 320 samples/frame
+            # Use duration-based filter (seconds) to handle mixed sampling rates correctly
+            max_duration = 4096 * 320 / 16000  # 81.92 seconds
             before = len(ds)
-            ds = ds.filter(lambda x: len(x["src_audio"]["array"]) <= max_samples)
-            print(f"Filtered {before - len(ds)} samples exceeding SONAR max audio length")
+            ds = ds.filter(
+                lambda x: len(x["src_audio"]["array"]) / x["src_audio"]["sampling_rate"] <= max_duration,
+                load_from_cache_file=False,
+            )
+            if before - len(ds) > 0:
+                print(f"Filtered {before - len(ds)} samples exceeding SONAR max audio length (>{max_duration:.1f}s)")
             return ds
 
         if "validation" in hf_dataset:

@@ -1,9 +1,10 @@
 #!/bin/bash
 
 MODEL_NAMES=(
-    orkney-avg-10ep
-    orkney-sum-10ep
-    orkney-concat-10ep
+    # orkney-avg-20ep
+    # orkney-sum-20ep
+    # orkney-concat-20ep
+    orkney-sum-from-text-ckpt-20ep
 )
 MODALITY=textaudio
 SPLIT=dev_asr  # dev or dev_asr
@@ -43,4 +44,11 @@ for MODEL_NAME in "${MODEL_NAMES[@]}"; do
         python evaluation/__main__.py -i "$input_file" -m "$scores_file"
     done
     cd ../..
+
+    # WER correlation analysis (only meaningful for dev_asr)
+    if [ "$SPLIT" = "dev_asr" ]; then
+        python eval_scripts/04-wer_correlation_analysis.py \
+            --model-dir $OUTPUT_DIR \
+            --split $SPLIT
+    fi
 done

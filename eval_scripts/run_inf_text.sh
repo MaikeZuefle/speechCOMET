@@ -1,10 +1,11 @@
 #!/bin/bash
 
 MODEL_NAMES=(
-    skye-10ep
+    skye-20ep
+    lewis-10ep
 )
 MODALITY=text
-SPLIT=dev_asr  # dev or dev_asr
+SPLIT=dev    #dev_asr  # dev or dev_asr
 HF=false  # true if all models are from HF
 
 
@@ -41,4 +42,11 @@ for MODEL_NAME in "${MODEL_NAMES[@]}"; do
         python evaluation/__main__.py -i "$input_file" -m "$scores_file"
     done
     cd ../..
+
+    # WER correlation analysis (only meaningful for dev_asr)
+    if [ "$SPLIT" = "dev_asr" ]; then
+        python eval_scripts/04-wer_correlation_analysis.py \
+            --model-dir $OUTPUT_DIR \
+            --split $SPLIT
+    fi
 done
