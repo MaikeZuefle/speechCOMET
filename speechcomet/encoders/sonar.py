@@ -44,11 +44,19 @@ class SONAREncoder(Encoder):
 
         for item in audios:
             if type(item).__name__ == "AudioDecoder": # HF encoded audio
-                samples = item.get_all_samples()
-                waveform = samples.data            # torch.Tensor (channels × samples)
+                # Use torchaudio via _hf_encoded to avoid torchcodec segfaults
+                import io
+                encoded = getattr(item, "_hf_encoded", None)
+                if encoded is not None and encoded.get("bytes"):
+                    waveform, sr = torchaudio.load(io.BytesIO(encoded["bytes"]))
+                elif encoded is not None and encoded.get("path"):
+                    waveform, sr = torchaudio.load(encoded["path"])
+                else:
+                    samples = item.get_all_samples()  # fallback
+                    waveform = samples.data
+                    sr = samples.sample_rate
                 if waveform.shape[0] > 1:
                     waveform = waveform.mean(dim=0, keepdim=True)
-                sr = samples.sample_rate
             else:
                 waveform, sr = torchaudio.load(str(item))
 

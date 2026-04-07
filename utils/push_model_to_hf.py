@@ -10,11 +10,22 @@ api = HfApi()
 
 TRAINED_MODELS_DIR = "trained_models"
 
+# Maps HF repo name -> local model folder to push (highest-epoch version)
 models = {
-    name: os.path.join(TRAINED_MODELS_DIR, name)
-    for name in sorted(os.listdir(TRAINED_MODELS_DIR))
-    if glob.glob(os.path.join(TRAINED_MODELS_DIR, name, "checkpoints", "epoch=*-*.ckpt"))
+    "harris":                    "harris-20ep-continue",
+    "lewis":                     "lewis-10ep",
+    "mull-attn":                 "mull-attn-10ep",
+    "mull-attn-lora":            "mull-attn-lora-10ep",
+    "mull-avg":                  "mull-avg-20ep",
+    "mull-avg-lora":             "mull-avg-lora-10ep",
+    "orkney-avg":                "orkney-avg-20ep",
+    "orkney-concat":             "orkney-concat-20ep",
+    "orkney-sum":                "orkney-sum-20ep",
+    "orkney-sum-from-text-ckpt": "orkney-sum-from-text-ckpt-20ep",
+    "shetland":                  "shetland-20ep",
+    "skye":                      "skye-20ep",
 }
+models = {hf_name: os.path.join(TRAINED_MODELS_DIR, local) for hf_name, local in models.items()}
 
 for model_name, model_path in tqdm(models.items(), desc="Uploading models"):
     ckpt_dir = os.path.join(model_path, "checkpoints")
@@ -41,7 +52,7 @@ for model_name, model_path in tqdm(models.items(), desc="Uploading models"):
         os.makedirs(tmp_ckpt_dir)
         shutil.copy2(last_checkpoint, os.path.join(tmp_ckpt_dir, "model.ckpt"))  # rename here
 
-        repo_id = f"maikezu/{model_name}"
+        repo_id = f"maikezu/{model_name}"  # model_name is the HF repo name
         api.create_repo(repo_id=repo_id, repo_type="model", exist_ok=True)
 
         api.upload_folder(
