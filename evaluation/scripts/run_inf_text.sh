@@ -1,13 +1,11 @@
 #!/bin/bash
 
 MODEL_NAMES=(
-    # orkney-avg-20ep
-    # orkney-sum-20ep
-    # orkney-concat-20ep
-    orkney-sum-from-text-ckpt-20ep
+    skye-20ep
+    lewis-10ep
 )
-MODALITY=textaudio
-SPLIT=dev_asr  # dev or dev_asr
+MODALITY=text
+SPLIT=dev    #dev_asr  # dev or dev_asr
 HF=false  # true if all models are from HF
 
 
@@ -29,14 +27,14 @@ for MODEL_NAME in "${MODEL_NAMES[@]}"; do
     echo "=== Running inference for $MODEL_NAME ==="
 
     # generation
-    python eval_scripts/run_inf.py \
+    python evaluation/run_inf.py \
       $MODEL_ARG \
       --dataset maikezu/scottish-metrics \
       --modality $MODALITY \
       --split $SPLIT
 
     # evaluation — run once per lang pair
-    cd eval_scripts/iwslt26-metrics/
+    cd evaluation/iwslt26-metrics/
     for scores_file in ../../$OUTPUT_DIR/output_scores_${SPLIT}_*.jsonl; do
         lang_pair=$(basename "$scores_file" .jsonl | sed "s/output_scores_${SPLIT}_//")
         input_file="../../$OUTPUT_DIR/input_data_${SPLIT}_${lang_pair}.jsonl"
@@ -47,8 +45,15 @@ for MODEL_NAME in "${MODEL_NAMES[@]}"; do
 
     # WER correlation analysis (only meaningful for dev_asr)
     if [ "$SPLIT" = "dev_asr" ]; then
-        python eval_scripts/04-wer_correlation_analysis.py \
+        python evaluation/04-wer_correlation_analysis.py \
             --model-dir $OUTPUT_DIR \
             --split $SPLIT
     fi
+
+    # MuST-SHE pairwise accuracy
+    python evaluation/mustshe_eval.py \
+        --mustshe-dir MuST-SHE_v1.2/MuST-SHE-v1.2-data/tsv \
+        --modality $MODALITY \
+        --batch-size 32 \
+        $MODEL_ARG
 done

@@ -29,4 +29,26 @@ speech_regression_metric:
       
 trainer: ../../trainer.yaml
 early_stopping: ../../early_stopping.yaml
-model_checkpoint: ../../model_checkpoint.yaml
+model_checkpoint:
+  class_path: pytorch_lightning.callbacks.model_checkpoint.ModelCheckpoint
+  init_args:
+    filename: '{epoch}-{step}-{val_kendall:.3f}'
+    monitor: val_kendall
+    verbose: True
+    save_last: True
+    save_top_k: 2
+    mode: max
+    save_weights_only: False
+    every_n_epochs: 1
+
+model_checkpoint_steps:
+  class_path: pytorch_lightning.callbacks.model_checkpoint.ModelCheckpoint
+  init_args:
+    filename: 'step={step}'
+    monitor: null
+    verbose: False
+    save_last: True
+    save_top_k: 1
+    mode: max
+    save_weights_only: False
+    every_n_train_steps: 7500

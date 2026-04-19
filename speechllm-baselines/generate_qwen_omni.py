@@ -11,6 +11,10 @@ import re
 
 from transformers import Qwen2_5OmniForConditionalGeneration, Qwen2_5OmniProcessor
 from qwen_omni_utils import process_mm_info
+from utils import (
+    load_mustshe_csv_files, check_missing_audio,
+    compute_mustshe_results, print_mustshe_pivot,
+)
 
 SYSTEM_PROMPT = "You are an evaluator. Given the source and/or audio and a translation, respond with only a single float score between 0 and 1 indicating translation quality. Output nothing else."
 
@@ -168,14 +172,87 @@ def run_eval(args):
     print(f"Done. Results saved to {output_dir}/")
 
 
+def run_mustshe(args):
+    print(f"Loading model: {args.model_name}")
+    model = Qwen2_5OmniForConditionalGeneration.from_pretrained(
+        args.model_name, torch_dtype="auto", device_map="auto"
+    )
+    processor = Qwen2_5OmniProcessor.from_pretrained(args.model_name)
+
+    output_dir = os.path.join(args.model_name.replace("/", "_"), "mustshe")
+    os.makedirs(output_dir, exist_ok=True)
+
+    print(f"\nLoading MuST-SHE CSV files from {args.mustshe_dir}")
+    df = load_mustshe_csv_files(args.mustshe_dir)
+    df = check_missing_audio(
+        df, missing_txt="MuST-SHE_v1.2/MuST-SHE-v1.2-data/missing.txt"
+    )
+    # Drop rows with missing audio (warned above)
+    df = df[df["audio_path"].apply(os.path.exists)].reset_index(drop=True)
+
+    text_convs, audio_convs, audiotext_convs, tmp_files = [], [], [], []
+    for _, row in tqdm(df.iterrows(), total=len(df), desc="Building conversations"):
+        audio_array, sr = sf.read(row["audio_path"], dtype="float32", always_2d=False)
+
+        text_convs.append(build_conversation_text(row["src"], row["mt"]))
+
+        audio_conv, tmp1 = build_conversation_audio(audio_array, sr, row["mt"])
+        audio_convs.append(audio_conv)
+        tmp_files.append(tmp1)
+
+        audiotext_conv, tmp2 = build_conversation_audiotext(audio_array, sr, row["src"], row["mt"])
+        audiotext_convs.append(audiotext_conv)
+        tmp_files.append(tmp2)
+
+    BATCH_SIZE = 1
+
+    def run_batched(convs, desc):
+        scores = []
+        for i in tqdm(range(0, len(convs), BATCH_SIZE), desc=desc):
+            scores.extend(predict_scores_batch(model, processor, convs[i:i + BATCH_SIZE]))
+        return scores
+
+    text_scores      = run_batched(text_convs,      "Scoring text")
+    torch.cuda.empty_cache()
+    audio_scores     = run_batched(audio_convs,     "Scoring audio")
+    torch.cuda.empty_cache()
+    audiotext_scores = run_batched(audiotext_convs, "Scoring audiotext")
+    torch.cuda.empty_cache()
+
+    for path in tmp_files:
+        os.unlink(path)
+
+    df = df.copy()
+    df["score_text"]      = text_scores
+    df["score_audio"]     = audio_scores
+    df["score_audiotext"] = audiotext_scores
+
+    scores_path = os.path.join(output_dir, "mustshe_scores.csv")
+    df.to_csv(scores_path, index=False)
+    print(f"\nSaved raw scores to {scores_path}")
+
+    for modality, col in [("text", "score_text"), ("audio", "score_audio"), ("audiotext", "score_audiotext")]:
+        results = compute_mustshe_results(df, score_col=col)
+        print_mustshe_pivot(results, modality=modality)
+        results.to_csv(os.path.join(output_dir, f"mustshe_results_{modality}.csv"), index=False)
+
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--model-name", type=str, default="Qwen/Qwen2.5-Omni-7B",
                         help="HuggingFace model name")
-    parser.add_argument("--dataset", type=str, required=True,
-                        help="HuggingFace dataset name")
+    parser.add_argument("--dataset", type=str, default=None,
+                        help="HuggingFace dataset name (for standard eval)")
     parser.add_argument("--split", type=str, default="dev_asr",
                         choices=["dev", "dev_asr"],
                         help="Dataset split to evaluate on (default: dev_asr)")
+    parser.add_argument("--mustshe-dir", type=str, default=None,
+                        help="Path to MuST-SHE-v1.2-data/tsv/ for MuST-SHE eval")
     args = parser.parse_args()
-    run_eval(args)
+
+    if args.mustshe_dir:
+        run_mustshe(args)
+    elif args.dataset:
+        run_eval(args)
+    else:
+        parser.error("Either --dataset or --mustshe-dir must be provided")

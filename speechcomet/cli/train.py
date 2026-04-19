@@ -70,6 +70,7 @@ def read_arguments() -> ArgumentParser:
     parser.add_subclass_arguments(UnifiedMetric, "unified_metric")
     parser.add_subclass_arguments(EarlyStopping, "early_stopping")
     parser.add_subclass_arguments(ModelCheckpoint, "model_checkpoint")
+    parser.add_subclass_arguments(ModelCheckpoint, "model_checkpoint_steps", required=False)
     parser.add_subclass_arguments(Trainer, "trainer")
     parser.add_argument(
         "--load_from_checkpoint",
@@ -81,6 +82,11 @@ def read_arguments() -> ArgumentParser:
         action="store_true",
         help="Strictly enforce that the keys in checkpoint_path match the keys returned by this module's state dict.",
     )
+    parser.add_argument(
+        "--ckpt_path",
+        help="Resume training from a checkpoint (restores model, optimizer and step count).",
+        default=None,
+    )
     return parser
 
 
@@ -88,13 +94,19 @@ def initialize_trainer(configs, version=None) -> Trainer:
     checkpoint_callback = ModelCheckpoint(
         **namespace_to_dict(configs.model_checkpoint.init_args)
     )
+    callbacks = [checkpoint_callback]
+    # Optional mid-epoch checkpoint (for crash recovery, no monitor needed)
+    if hasattr(configs, "model_checkpoint_steps") and configs.model_checkpoint_steps is not None:
+        step_checkpoint_callback = ModelCheckpoint(
+            **namespace_to_dict(configs.model_checkpoint_steps.init_args)
+        )
+        callbacks.append(step_checkpoint_callback)
     early_stop_callback = EarlyStopping(
         **namespace_to_dict(configs.early_stopping.init_args)
     )
     trainer_args = namespace_to_dict(configs.trainer.init_args)
     lr_monitor = LearningRateMonitor(logging_interval="step")
-    trainer_args["callbacks"] = [
-        early_stop_callback, checkpoint_callback, lr_monitor]
+    trainer_args["callbacks"] = [early_stop_callback, lr_monitor] + callbacks
     print("TRAINER ARGUMENTS: ")
     logger = TensorBoardLogger("trained_models", name="", version=version)    
     trainer_args["logger"] = logger
@@ -220,7 +232,7 @@ def train_command() -> None:
         category=UserWarning,
         message=".*Consider increasing the value of the `num_workers` argument` .*",
     )
-    trainer.fit(model)
+    trainer.fit(model, ckpt_path=cfg.ckpt_path)
 
 
 if __name__ == "__main__":

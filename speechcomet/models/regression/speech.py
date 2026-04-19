@@ -368,13 +368,23 @@ class SpeechRegression(RegressionMetric):
             )
             # Filter samples that would exceed SONAR's 4096 frame limit
             # SONAR uses fbank (10ms hop = 160 samples at 16kHz) + fbank_stride=2 → 320 samples/frame
-            # Use duration-based filter (seconds) to handle mixed sampling rates correctly
+            # Use sf.info() (header-only, no torchcodec) to avoid leaking resources over ~500k calls
             max_duration = 4096 * 320 / 16000  # 81.92 seconds
             before = len(ds)
-            ds = ds.filter(
-                lambda x: len(x["src_audio"]["array"]) / x["src_audio"]["sampling_rate"] <= max_duration,
-                load_from_cache_file=False,
-            )
+            def _duration_ok(x):
+                import io, soundfile as sf
+                audio = x["src_audio"]
+                enc = getattr(audio, "_hf_encoded", None)
+                try:
+                    if enc and enc.get("bytes"):
+                        return sf.info(io.BytesIO(enc["bytes"])).duration <= max_duration
+                    elif enc and enc.get("path"):
+                        return sf.info(enc["path"]).duration <= max_duration
+                except Exception:
+                    pass
+                # fallback: torchcodec path
+                return len(audio["array"]) / audio["sampling_rate"] <= max_duration
+            ds = ds.filter(_duration_ok, load_from_cache_file=False)
             if before - len(ds) > 0:
                 print(f"Filtered {before - len(ds)} samples exceeding SONAR max audio length (>{max_duration:.1f}s)")
             return ds

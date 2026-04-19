@@ -145,3 +145,8 @@ speechllm-baselines/Qwen_Qwen2.5-Omni-7B
 myjob_eval.sh
 .claude/
 myjob_kokoro.sh
+myjob_resume.sh
+MuST-SHE_v1.2.zip
+MuST-SHE_v1.2/
+train_with_resume.sh
+evaluation/iwslt26-metrics

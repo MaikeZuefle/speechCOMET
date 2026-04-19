@@ -114,9 +114,10 @@ def system_level(data_lang):
     return subset2evaluate.evaluate.eval_subset_spa(data_coll, data_coll, metric=("score", "score_pred"))
 
 
-def load_data(model_dir, split, lang_pair):
+def load_data(model_dir, split, lang_pair, score_suffix=""):
     input_file  = os.path.join(model_dir, f"input_data_{split}_{lang_pair}.jsonl")
-    scores_file = os.path.join(model_dir, f"output_scores_{split}_{lang_pair}.jsonl")
+    suffix = f"_{score_suffix}" if score_suffix else ""
+    scores_file = os.path.join(model_dir, f"output_scores_{split}_{lang_pair}{suffix}.jsonl")
 
     with open(input_file)  as f: data   = [json.loads(l) for l in f]
     with open(scores_file) as f: scores = [json.loads(l) for l in f]
@@ -133,6 +134,8 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--model-dir", required=True)
     parser.add_argument("--split", default="dev_asr")
+    parser.add_argument("--score-suffix", default="",
+                        help="Suffix on score files, e.g. 'audio' for output_scores_..._audio.jsonl")
     parser.add_argument("--wer-csv", default="data/wer_dev_asr.csv")
     parser.add_argument("--results-csv", default="data/wer_analysis/wer_correlation_results.csv")
     parser.add_argument("--output", default=None, help="Plot output path. Defaults to data/wer_analysis/<model_name>.png")
@@ -149,7 +152,7 @@ def main():
             print(f"Skipping {lang_pair} (no input file found)")
             continue
 
-        data = load_data(args.model_dir, args.split, lang_pair)
+        data = load_data(args.model_dir, args.split, lang_pair, args.score_suffix)
 
         # attach WER
         matched, missing = 0, 0
@@ -195,6 +198,8 @@ def main():
     bucket_labels = [b[0] for b in BUCKETS]
     os.makedirs("data/wer_analysis", exist_ok=True)
     model_name = os.path.basename(args.model_dir.rstrip("/"))
+    if args.score_suffix:
+        model_name = f"{model_name}_{args.score_suffix}"
     plot_path = args.output or f"data/wer_analysis/{model_name}.png"
     row = {"model": model_name}
 
