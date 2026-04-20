@@ -17,7 +17,7 @@ speech_regression_metric:
     layer_transformation: sparsemax
     layer_norm: False
     dropout: 0.1
-    batch_size: 2
+    batch_size: 1
     train_data:
       - maikezu/iwslt2026-metrics-shared-train-dev
 
