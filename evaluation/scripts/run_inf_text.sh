@@ -52,7 +52,7 @@ for MODEL_NAME in "${MODEL_NAMES[@]}"; do
 
     # MuST-SHE pairwise accuracy
     python evaluation/mustshe_eval.py \
-        --mustshe-dir MuST-SHE_v1.2/MuST-SHE-v1.2-data/tsv \
+        --mustshe-dir data/MuST-SHE_v1.2/MuST-SHE-v1.2-data/tsv \
         --modality $MODALITY \
         --batch-size 32 \
         $MODEL_ARG

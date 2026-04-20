@@ -21,7 +21,7 @@ HF=false        # true if all models are from HF
 # define paths
 CHECKPOINT_FOLDER=trained_models  # ignored if HF=true
 HF_USER=maikezu                   # ignored if HF=false
-MUSTSHE_DIR="MuST-SHE_v1.2/MuST-SHE-v1.2-data/tsv"
+MUSTSHE_DIR="data/MuST-SHE_v1.2/MuST-SHE-v1.2-data/tsv"
 
 # --------------
 for MODEL_NAME in "${MODEL_NAMES[@]}"; do

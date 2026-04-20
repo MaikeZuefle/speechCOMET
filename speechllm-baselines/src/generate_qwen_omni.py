@@ -185,7 +185,7 @@ def run_mustshe(args):
     print(f"\nLoading MuST-SHE CSV files from {args.mustshe_dir}")
     df = load_mustshe_csv_files(args.mustshe_dir)
     df = check_missing_audio(
-        df, missing_txt="MuST-SHE_v1.2/MuST-SHE-v1.2-data/missing.txt"
+        df, missing_txt="../data/MuST-SHE_v1.2/MuST-SHE-v1.2-data/missing.txt"
     )
     # Drop rows with missing audio (warned above)
     df = df[df["audio_path"].apply(os.path.exists)].reset_index(drop=True)

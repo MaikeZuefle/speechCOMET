@@ -73,7 +73,7 @@ def run_inference(df, model, batch_size, modality):
             for lang, grp in df[missing_mask].groupby("lang"):
                 n_pairs = grp["audio_path"].nunique()
                 print(f"  {lang}: {n_pairs} pairs skipped")
-            print(f"  See MuST-SHE_v1.2/MuST-SHE-v1.2-data/missing.txt for full list\n")
+            print(f"  See data/MuST-SHE_v1.2/MuST-SHE-v1.2-data/missing.txt for full list\n")
             df = df[~missing_mask].reset_index(drop=True)
     samples = [build_sample(row, modality) for _, row in df.iterrows()]
     print(f"\nRunning inference on {len(samples)} samples...")
