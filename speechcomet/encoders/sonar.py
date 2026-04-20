@@ -38,7 +38,6 @@ class SONAREncoder(Encoder):
     lora_enabled = False  # SONAR does not support LoRA
 
     def prepare_sample(self, audios):
-        from datasets.features._torchcodec import AudioDecoder
         import torchaudio
         waveforms = []
 

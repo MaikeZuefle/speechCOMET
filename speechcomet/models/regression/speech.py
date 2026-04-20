@@ -29,6 +29,7 @@ from speechcomet.models.regression.regression_metric import RegressionMetric
 from speechcomet.models.utils import Prediction, Target
 from speechcomet.modules import FeedForward
 from speechcomet.encoders.sonar import SONAREncoder
+from speechcomet.encoders.sonar_ft import SONARFTEncoder
 from speechcomet.encoders.whisper import WhisperEncoder
 
 import random
@@ -105,6 +106,8 @@ class SpeechRegression(RegressionMetric):
         lora_r: int = 8,
         lora_alpha: int = 16,
         lora_dropout: float = 0.0,
+        sonar_ft_freeze_layers: int = 4,
+        debug: bool = False,
         load_pretrained_weights: bool = True,
         local_files_only: bool = False,
         num_workers: Optional[int] = None,
@@ -144,9 +147,15 @@ class SpeechRegression(RegressionMetric):
         if self.input_modality in ["audio", "audiotext"]:
             # somehow self.device is cpu here, so set manually
             if encoder_model_audio.startswith("sonar_"):
-                self.encoder_model_audio = SONAREncoder(
-                    encoder_model_audio, text_out_dim=self.encoder.output_units, device="cuda"
-                )
+                if keep_src_embeddings_frozen:
+                    self.encoder_model_audio = SONAREncoder(
+                        encoder_model_audio, text_out_dim=self.encoder.output_units, device="cuda"
+                    )
+                else:
+                    self.encoder_model_audio = SONARFTEncoder(
+                        encoder_model_audio, text_out_dim=self.encoder.output_units,
+                        device="cuda", freeze_layers=sonar_ft_freeze_layers,
+                    )
             else:
                 self.encoder_model_audio = WhisperEncoder(
                     encoder_model_audio, text_out_dim=self.encoder.output_units, device="cuda", pool=pool_audio
@@ -154,11 +163,13 @@ class SpeechRegression(RegressionMetric):
 
             if keep_src_embeddings_frozen:
                 self.encoder_model_audio.freeze_embeddings()
-            elif isinstance(self.encoder_model_audio, SONAREncoder):
-                raise NotImplementedError(
-                    "Fine-tuning the SONAR encoder is not supported. "
-                    "Set keep_src_embeddings_frozen: True."
-                )
+            elif isinstance(self.encoder_model_audio, SONARFTEncoder):
+                # Mirror the text encoder warm-up: fully freeze during nr_frozen_epochs,
+                # then unfreeze_encoder() will apply the partial freeze.
+                if self.hparams.nr_frozen_epochs > 0:
+                    self.encoder_model_audio.freeze()
+                else:
+                    self.encoder_model_audio.freeze_embeddings()
             else:
                 # Whisper: apply LoRA — only small adapter weights are trained
                 self.encoder_model_audio.apply_lora(
@@ -186,6 +197,31 @@ class SpeechRegression(RegressionMetric):
     def requires_references(self) -> bool:
         return False
 
+
+    def freeze_encoder(self) -> None:
+        """Freeze text encoder and (if present) audio encoder."""
+        super().freeze_encoder()
+        if hasattr(self, "encoder_model_audio"):
+            self.encoder_model_audio.freeze()
+
+    def unfreeze_encoder(self) -> None:
+        """Unfreeze text encoder; for SONARFTEncoder apply partial freeze instead of full unfreeze."""
+        was_frozen = self._frozen
+        super().unfreeze_encoder()
+        if (
+            was_frozen
+            and hasattr(self, "encoder_model_audio")
+            and isinstance(self.encoder_model_audio, SONARFTEncoder)
+            and not self.hparams.keep_src_embeddings_frozen
+        ):
+            self.encoder_model_audio.freeze_embeddings()
+            n = self.encoder_model_audio.num_layers
+            f = self.encoder_model_audio.freeze_layers
+            trainable = sum(p.numel() for p in self.encoder_model_audio.parameters() if p.requires_grad)
+            frozen = sum(p.numel() for p in self.encoder_model_audio.parameters() if not p.requires_grad)
+            print(f"SONAR fine-tuning: layers {f}-{n-1} unfrozen ({n-f}/{n} layers + pooler trainable)")
+            print(f"SONAR params — trainable: {trainable/1e6:.1f}M, frozen: {frozen/1e6:.1f}M")
+
     def configure_optimizers(
         self,
     ) -> Tuple[List[torch.optim.Optimizer], List[torch.optim.lr_scheduler.LambdaLR]]:
@@ -209,6 +245,11 @@ class SpeechRegression(RegressionMetric):
                 lora_params = [p for p in self.encoder_model_audio.model.parameters() if p.requires_grad]
                 top_layers_parameters.append(
                     {"params": lora_params, "lr": self.hparams.encoder_learning_rate}
+                )
+            if isinstance(self.encoder_model_audio, SONARFTEncoder):
+                # Add layerwise parameter groups for the unfrozen SONAR layers.
+                layer_parameters = layer_parameters + self.encoder_model_audio.layerwise_lr(
+                    self.hparams.encoder_learning_rate, self.hparams.layerwise_decay
                 )
         if self.input_modality == "audiotext":
             fusion_params = []
@@ -366,6 +407,9 @@ class SpeechRegression(RegressionMetric):
             ds = ds.remove_columns(
                 [c for c in ds.column_names if c not in {"src", "mt", "score", "src_audio"}]
             )
+            if self.hparams.debug:
+                ds = ds.select(range(min(20, len(ds))))
+                return ds
             # Filter samples that would exceed SONAR's 4096 frame limit
             # SONAR uses fbank (10ms hop = 160 samples at 16kHz) + fbank_stride=2 → 320 samples/frame
             # Use sf.info() (header-only, no torchcodec) to avoid leaking resources over ~500k calls

@@ -16,6 +16,7 @@ from .minilm import MiniLMEncoder
 from .xlmr import XLMREncoder
 from .rembert import RemBERTEncoder
 from .xlmr_xl import XLMRXLEncoder
+from .sonar_ft import SONARFTEncoder
 
 str2encoder = {
     "BERT": BERTEncoder,

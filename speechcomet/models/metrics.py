@@ -127,9 +127,12 @@ class RegressionMetrics(Metric):
         except TypeError:
             preds = self.preds
             target = self.target
-        kendall, _ = stats.kendalltau(preds.tolist(), target.tolist())
-        spearman, _ = stats.spearmanr(preds.tolist(), target.tolist())
-        pearson, _ = stats.pearsonr(preds.tolist(), target.tolist())
+        if len(preds) < 2:
+            kendall = spearman = pearson = float("nan")
+        else:
+            kendall, _ = stats.kendalltau(preds.tolist(), target.tolist())
+            spearman, _ = stats.spearmanr(preds.tolist(), target.tolist())
+            pearson, _ = stats.pearsonr(preds.tolist(), target.tolist())
         report = {
             self.prefix + "_kendall": kendall,
             self.prefix + "_spearman": spearman,
