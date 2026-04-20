@@ -58,4 +58,11 @@ for MODEL_NAME in "${MODEL_NAMES[@]}"; do
         --modality $MODALITY \
         --batch-size 32 \
         $MODEL_ARG
+
+    # ContraProST pairwise accuracy
+    python evaluation/contraprost_eval.py \
+        --data-dir data/contraProST \
+        --modality $MODALITY \
+        --batch-size 32 \
+        $MODEL_ARG
 done

@@ -2,20 +2,19 @@
 # Evaluate SpeechCOMET models on MuST-SHE pairwise accuracy.
 
 MODEL_NAMES=(
-    # shetland
     # harris-20ep
-    shetland-20ep
+    # shetland-20ep
     # orkney-avg-20ep
     # orkney-sum-20ep
     # orkney-concat-20ep
     # orkney-sum-from-text-ckpt-20ep
     # mull-avg-20ep
     # mull-avg-lora-10ep
-    # mull-attn-10-ep
+    mull-attn-10ep
     # mull-attn-lora-10ep
 
 )
-MODALITY=audio  # audio, text, textaudio
+MODALITY=textaudio  # audio, text, textaudio
 HF=false        # true if all models are from HF
 
 # define paths

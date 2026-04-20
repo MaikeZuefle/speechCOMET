@@ -1,4 +1,4 @@
 cd "$(dirname "$0")/../src" || exit 1
 
 python generate_qwen_omni.py \
-    --mustshe-dir ../../data/MuST-SHE_v1.2/MuST-SHE-v1.2-data/tsv
+    --contraprost-dir ../../data/contraProST
