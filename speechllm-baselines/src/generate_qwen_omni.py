@@ -95,10 +95,10 @@ def run_eval(args):
     model = Qwen2_5OmniForConditionalGeneration.from_pretrained(
         args.model_name, torch_dtype="auto", device_map="auto"
     )
-    processor = Qwen2_5OmniProcessor.from_pretrained(args.model_name)
+    processor = Qwen2_5OmniProcessor.from_pretrained("Qwen/Qwen2.5-Omni-7B")
 
     _base = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..")
-    output_dir = os.path.join(_base, args.model_name.replace("/", "_"))
+    output_dir = os.path.join(_base, args.output_name)
     os.makedirs(output_dir, exist_ok=True)
 
     dataset = load_dataset(args.dataset)[args.split]
@@ -180,10 +180,10 @@ def run_mustshe(args):
     model = Qwen2_5OmniForConditionalGeneration.from_pretrained(
         args.model_name, torch_dtype="auto", device_map="auto"
     )
-    processor = Qwen2_5OmniProcessor.from_pretrained(args.model_name)
+    processor = Qwen2_5OmniProcessor.from_pretrained("Qwen/Qwen2.5-Omni-7B")
 
     _base = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..")
-    output_dir = os.path.join(_base, args.model_name.replace("/", "_"), "mustshe")
+    output_dir = os.path.join(_base, args.output_name, "mustshe")
     os.makedirs(output_dir, exist_ok=True)
 
     print(f"\nLoading MuST-SHE CSV files from {args.mustshe_dir}")
@@ -246,10 +246,10 @@ def run_contraprost(args):
     model = Qwen2_5OmniForConditionalGeneration.from_pretrained(
         args.model_name, torch_dtype="auto", device_map="auto"
     )
-    processor = Qwen2_5OmniProcessor.from_pretrained(args.model_name)
+    processor = Qwen2_5OmniProcessor.from_pretrained("Qwen/Qwen2.5-Omni-7B")
 
     _base = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..")
-    output_dir = os.path.join(_base, args.model_name.replace("/", "_"), "contraprost")
+    output_dir = os.path.join(_base, args.output_name, "contraprost")
     os.makedirs(output_dir, exist_ok=True)
 
     print(f"\nLoading ContraProST CSV files from {args.contraprost_dir}")
@@ -305,7 +305,9 @@ def run_contraprost(args):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--model-name", type=str, default="Qwen/Qwen2.5-Omni-7B",
-                        help="HuggingFace model name")
+                        help="HuggingFace model ID or local path")
+    parser.add_argument("--output-name", type=str, default=None,
+                        help="Output subdirectory name (defaults to model-name with / replaced by _)")
     parser.add_argument("--dataset", type=str, default=None,
                         help="HuggingFace dataset name (for standard eval)")
     parser.add_argument("--split", type=str, default="dev_asr",
@@ -316,6 +318,8 @@ if __name__ == "__main__":
     parser.add_argument("--contraprost-dir", type=str, default=None,
                         help="Path to contraProST directory containing en_*_expanded.csv files")
     args = parser.parse_args()
+    if args.output_name is None:
+        args.output_name = args.model_name.replace("/", "_")
 
     if args.mustshe_dir:
         run_mustshe(args)
