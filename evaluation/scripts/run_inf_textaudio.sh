@@ -47,7 +47,7 @@ for MODEL_NAME in "${MODEL_NAMES[@]}"; do
 
     # WER correlation analysis (only meaningful for dev_asr)
     if [ "$SPLIT" = "dev_asr" ]; then
-        python evaluation/04-wer_correlation_analysis.py \
+        python evaluation/wer_correlation_analysis.py \
             --model-dir $OUTPUT_DIR \
             --split $SPLIT
     fi

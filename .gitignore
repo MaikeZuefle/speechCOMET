@@ -156,3 +156,5 @@ speechllm-baselines/myjob_qwen.sh
 CLAUDE.md
 speechllm-baselines/saves/
 speechllm-baselines/wandb/
+speechllm-baselines/Qwen_Qwen2.5-Omni-7B-*
+configs/models/scottish/shetland-FT-sonar-continue.yaml

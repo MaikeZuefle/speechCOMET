@@ -138,13 +138,21 @@ def main():
                         help="Suffix on score files, e.g. 'audio' for output_scores_..._audio.jsonl")
     parser.add_argument("--wer-csv", default="data/wer_dev_asr.csv")
     parser.add_argument("--results-csv", default="data/wer_analysis/wer_correlation_results.csv")
+    parser.add_argument("--challenge-results-csv", default=None,
+                        help="Path for challenge results CSV (default: auto-named with threshold)")
     parser.add_argument("--output", default=None, help="Plot output path. Defaults to data/wer_analysis/<model_name>.png")
+    parser.add_argument("--challenge-score-threshold", type=float, default=80.0,
+                        help="Min human score for challenge set (default: 80)")
     args = parser.parse_args()
+    if args.challenge_results_csv is None:
+        thresh_str = f"{int(args.challenge_score_threshold)}"
+        args.challenge_results_csv = f"data/wer_analysis/wer_correlation_challenge{thresh_str}_results.csv"
 
     wer_df = pd.read_csv(args.wer_csv)
     wer_lookup = {(row.audio_path, row.doc_id, row.tgt_system, row.tgt_lang): row.wer for row in wer_df.itertuples()}
 
-    results = {}  # lang_pair -> bucket_label -> {seg, sys, n}
+    results = {}    # lang_pair -> bucket_label -> {seg, sys, n}
+    all_data = {}   # lang_pair -> list of lines (with wer attached), reused by challenge block
 
     for lang_pair in LANG_PAIRS:
         input_file = os.path.join(args.model_dir, f"input_data_{args.split}_{lang_pair}.jsonl")
@@ -185,14 +193,41 @@ def main():
             print(f"  {label:<12} {n:>6}  {seg_str:>10}  {sys_str:>10}")
 
         # overall
-        all_data = [l for l in data if l["wer"] is not None]
-        seg_all = segment_level(all_data)
-        sys_all = system_level(all_data)
-        wer_r, wer_p = wer_vs_corr(all_data)
+        data_with_wer = [l for l in data if l["wer"] is not None]
+        all_data[lang_pair] = data_with_wer
+        seg_all = segment_level(data_with_wer)
+        sys_all = system_level(data_with_wer)
+        wer_r, wer_p = wer_vs_corr(data_with_wer)
         results[lang_pair]["_all"] = {"seg": seg_all, "sys": sys_all, "wer_r": wer_r, "wer_p": wer_p}
         wer_r_str = f"{wer_r:+.3f} (p={wer_p:.3f})" if not np.isnan(wer_r) else "  n/a"
         print(f"  {'ALL':<12} {len(all_data):>6}  {seg_all:.1%}  {sys_all:.1%}")
         print(f"  WER vs seg-corr (Spearman r): {wer_r_str}")
+
+    # Challenge set: high-QE examples (score >= threshold), same WER bins as full analysis
+    CHALLENGE_BUCKETS = BUCKETS
+    challenge_results = {}  # lang_pair -> bucket_label -> {seg, sys, n}
+    thresh = args.challenge_score_threshold
+    print(f"\n=== Challenge set (human score ≥ {thresh:.0f}) ===")
+    for lang_pair in LANG_PAIRS:
+        if lang_pair not in results:
+            continue
+        high_qe = [l for l in all_data[lang_pair] if float(l["score"]) >= thresh]
+        challenge_results[lang_pair] = {}
+        print(f"\n{lang_pair}  (n={len(high_qe)} with score≥{thresh:.0f}):")
+        print(f"  {'Bucket':<22} {'N':>6}  {'Seg-level':>10}  {'Sys-level':>10}")
+        print(f"  {'-'*54}")
+        for label, lo, hi in CHALLENGE_BUCKETS:
+            subset = [l for l in high_qe if lo <= l["wer"] < hi]
+            n = len(subset)
+            if n < 5:
+                seg, sys = float("nan"), float("nan")
+            else:
+                seg = segment_level(subset)
+                sys = system_level(subset)
+            challenge_results[lang_pair][label] = {"seg": seg, "sys": sys, "n": n}
+            seg_str = f"{seg:.1%}" if not np.isnan(seg) else "  n/a"
+            sys_str = f"{sys:.1%}" if not np.isnan(sys) else "  n/a"
+            print(f"  {label:<22} {n:>6}  {seg_str:>10}  {sys_str:>10}")
 
     # Build CSV row
     bucket_labels = [b[0] for b in BUCKETS]
@@ -227,7 +262,7 @@ def main():
                 col = f"{key}_{lp_key}_{label}"
                 row[col] = results[lp][label][metric] if lp in results else float("nan")
 
-    # upsert into CSV
+    # upsert into main CSV
     csv_path = args.results_csv
     os.makedirs(os.path.dirname(csv_path) or ".", exist_ok=True)
     if os.path.exists(csv_path):
@@ -260,6 +295,39 @@ def main():
     df[numeric_cols] = df[numeric_cols].round(4)
     df[ordered_cols].to_csv(csv_path, index=False)
     print(f"\nResults saved to {csv_path}")
+
+    # Challenge CSV
+    challenge_bucket_labels = [b[0] for b in CHALLENGE_BUCKETS]
+    crow = {"model": model_name}
+    for metric, key in [("seg", "segment"), ("sys", "system")]:
+        for lp, lp_key in [("en-de", "de"), ("en-zh", "zh")]:
+            for label in challenge_bucket_labels:
+                col = f"{key}_{lp_key}_{label}"
+                crow[col] = challenge_results[lp][label][metric] if lp in challenge_results else float("nan")
+    challenge_ordered_cols = (
+        ["model"]
+        + [f"segment_de_{l}" for l in challenge_bucket_labels]
+        + [f"segment_zh_{l}" for l in challenge_bucket_labels]
+        + [f"system_de_{l}"  for l in challenge_bucket_labels]
+        + [f"system_zh_{l}"  for l in challenge_bucket_labels]
+    )
+    csv_challenge_path = args.challenge_results_csv
+    os.makedirs(os.path.dirname(csv_challenge_path) or ".", exist_ok=True)
+    if os.path.exists(csv_challenge_path):
+        cdf = pd.read_csv(csv_challenge_path)
+        if model_name in cdf["model"].values:
+            cdf.loc[cdf["model"] == model_name, list(crow.keys())[1:]] = list(crow.values())[1:]
+        else:
+            cdf = pd.concat([cdf, pd.DataFrame([crow])], ignore_index=True)
+    else:
+        cdf = pd.DataFrame([crow])
+    challenge_ordered_cols = [c for c in challenge_ordered_cols if c in cdf.columns]
+    cdf["_order"] = cdf["model"].apply(model_sort_key)
+    cdf = cdf.sort_values("_order").drop(columns="_order").reset_index(drop=True)
+    numeric_cols = [c for c in challenge_ordered_cols if c != "model"]
+    cdf[numeric_cols] = cdf[numeric_cols].round(4)
+    cdf[challenge_ordered_cols].to_csv(csv_challenge_path, index=False)
+    print(f"Challenge results saved to {csv_challenge_path}")
 
     # Plot
     n_langs = len(results)
