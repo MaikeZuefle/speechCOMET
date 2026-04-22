@@ -8,7 +8,8 @@ MODEL_NAMES=(
     # shetland
     # skye
     # shetland-20ep
-    harris-20ep-continue
+    # harris-20ep-continue
+    harris-FT-sonar
 )
 MODALITY=audio
 SPLIT=dev_asr  # dev or dev_asr
@@ -17,6 +18,7 @@ HF=false  # true if all models are from HF
 
 # define paths
 CHECKPOINT_FOLDER=trained_models # ignore if HF models
+WER_CSV="data/wer_analysis/wer_dev_asr.csv"
 HF_USER=maikezu # ignore if local models
 
 
@@ -52,6 +54,7 @@ for MODEL_NAME in "${MODEL_NAMES[@]}"; do
     # WER correlation analysis (only meaningful for dev_asr)
     if [ "$SPLIT" = "dev_asr" ]; then
         python evaluation/wer_correlation_analysis.py \
+            --wer-csv "$WER_CSV" \
             --model-dir $OUTPUT_DIR \
             --split $SPLIT
     fi

@@ -146,6 +146,7 @@ myjob_eval.sh
 .claude/
 myjob_kokoro.sh
 myjob_resume.sh
+myjob_comet.sh
 MuST-SHE_v1.2.zip
 MuST-SHE_v1.2/
 train_with_resume.sh
@@ -158,3 +159,6 @@ speechllm-baselines/saves/
 speechllm-baselines/wandb/
 speechllm-baselines/Qwen_Qwen2.5-Omni-7B-*
 configs/models/scottish/shetland-FT-sonar-continue.yaml
+QE-baselines/SpeechQE
+QE-baselines/results
+speechllm-baselines/results

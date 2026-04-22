@@ -14,7 +14,7 @@ import pandas as pd
 from eval_utils import load_model, run_inference, pairwise_accuracy, load_contraprost_csv_files
 
 
-def compute_results(df):
+def compute_results(df, score_col="model_score"):
     # Same audio files appear across languages — use (lang, src_audio) as composite key
     # for any cross-language groupings to avoid duplicate key collisions.
     df = df.copy()
@@ -23,25 +23,41 @@ def compute_results(df):
     rows = []
 
     for (lang, cat), group in df.groupby(["lang", "category"]):
-        acc, gap, n = pairwise_accuracy(group, key_col="src_audio")
+        acc, gap, n = pairwise_accuracy(group, key_col="src_audio", score_col=score_col)
         rows.append({"lang": lang, "category": cat, "n_pairs": n,
                      "pairwise_acc": acc, "mean_score_gap": gap})
 
     for lang, group in df.groupby("lang"):
-        acc, gap, n = pairwise_accuracy(group, key_col="src_audio")
+        acc, gap, n = pairwise_accuracy(group, key_col="src_audio", score_col=score_col)
         rows.append({"lang": lang, "category": "ALL", "n_pairs": n,
                      "pairwise_acc": acc, "mean_score_gap": gap})
 
     for cat, group in df.groupby("category"):
-        acc, gap, n = pairwise_accuracy(group, key_col="_key")
+        acc, gap, n = pairwise_accuracy(group, key_col="_key", score_col=score_col)
         rows.append({"lang": "ALL", "category": cat, "n_pairs": n,
                      "pairwise_acc": acc, "mean_score_gap": gap})
 
-    acc, gap, n = pairwise_accuracy(df, key_col="_key")
+    acc, gap, n = pairwise_accuracy(df, key_col="_key", score_col=score_col)
     rows.append({"lang": "ALL", "category": "ALL", "n_pairs": n,
                  "pairwise_acc": acc, "mean_score_gap": gap})
 
     return pd.DataFrame(rows).sort_values(["lang", "category"])
+
+
+def print_contraprost_results(results: pd.DataFrame, modality: str = ""):
+    """Print pairwise accuracy per language and per prosodic category."""
+    header = f"=== ContraProST Pairwise Accuracy ({modality}) ===" if modality else "=== ContraProST Pairwise Accuracy ==="
+    print(f"\n{header}")
+    lang_rows = results[(results["lang"] != "ALL") & (results["category"] == "ALL")]
+    for _, row in lang_rows.iterrows():
+        print(f"  {row['lang']:6s}  acc={row['pairwise_acc']:.3f}  gap={row['mean_score_gap']:.4f}  (n={row['n_pairs']})")
+    overall = results[(results["lang"] == "ALL") & (results["category"] == "ALL")].iloc[0]
+    print(f"  {'ALL':6s}  acc={overall['pairwise_acc']:.3f}  gap={overall['mean_score_gap']:.4f}  (n={overall['n_pairs']})")
+    print(f"\n  {'Category':<30s}  acc    gap")
+    cat_rows = results[(results["lang"] == "ALL") & (results["category"] != "ALL")]
+    for _, row in cat_rows.iterrows():
+        print(f"  {row['category']:<30s}  {row['pairwise_acc']:.3f}  {row['mean_score_gap']:.4f}  (n={row['n_pairs']})")
+    print()
 
 
 def main():
@@ -77,17 +93,7 @@ def main():
     print(f"\nSaved raw scores to {scores_path}")
 
     results = compute_results(df)
-
-    print("\n=== ContraProST Pairwise Accuracy ===")
-    lang_rows = results[(results["lang"] != "ALL") & (results["category"] == "ALL")]
-    for _, row in lang_rows.iterrows():
-        print(f"  {row['lang']:6s}  acc={row['pairwise_acc']:.3f}  gap={row['mean_score_gap']:.4f}  (n={row['n_pairs']})")
-    overall = results[(results["lang"] == "ALL") & (results["category"] == "ALL")].iloc[0]
-    print(f"  {'ALL':6s}  acc={overall['pairwise_acc']:.3f}  gap={overall['mean_score_gap']:.4f}  (n={overall['n_pairs']})")
-    print(f"\n=== ContraProST Pairwise Accuracy by Category ===")
-    cat_rows = results[(results["lang"] == "ALL") & (results["category"] != "ALL")]
-    for _, row in cat_rows.iterrows():
-        print(f"  {row['category']:<30s}  acc={row['pairwise_acc']:.3f}  gap={row['mean_score_gap']:.4f}  (n={row['n_pairs']})")
+    print_contraprost_results(results)
 
     results["pairwise_acc"]   = results["pairwise_acc"].map(lambda x: f"{x:.3f}" if x == x else "nan")
     results["mean_score_gap"] = results["mean_score_gap"].map(lambda x: f"{x:.4f}" if x == x else "nan")

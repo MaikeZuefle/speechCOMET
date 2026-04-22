@@ -10,7 +10,7 @@ speech_regression_metric:
     layerwise_decay: 0.95
     encoder_model: XLM-RoBERTa
     encoder_model_audio: sonar_speech_encoder_eng
-    input_modality: audiotext
+    input_modality: audio
     pretrained_model: xlm-roberta-base
     pool: avg
     layer: mix
@@ -18,15 +18,14 @@ speech_regression_metric:
     layer_norm: False
     dropout: 0.1
     batch_size: 1
-    train_data:
+    train_data: 
       - maikezu/iwslt2026-metrics-shared-train-dev
-
+    
     validation_data:
       - maikezu/iwslt2026-metrics-shared-train-dev
-
-    sonar_ft_freeze_layers: 4
-
-
+    
+      
+      
 trainer: ../../trainer.yaml
 early_stopping: ../../early_stopping.yaml
 model_checkpoint: ../../model_checkpoint.yaml

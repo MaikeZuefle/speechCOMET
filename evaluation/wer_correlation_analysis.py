@@ -34,6 +34,8 @@ MODEL_ORDER = [
 ]
 
 def model_sort_key(model_name):
+    if not isinstance(model_name, str):
+        return len(MODEL_ORDER)
     for i, prefix in enumerate(MODEL_ORDER):
         if model_name.startswith(prefix):
             return i
@@ -105,6 +107,8 @@ def system_level(data_lang):
         {"scores": {line["tgt_system"]: {"score": line["score"], "score_pred": line["score_pred"]} for line in doc}}
         for doc in data_coll.values()
     ]
+    if not data_coll:
+        return float("nan")
     systems = set.union(*[set(doc["scores"].keys()) for doc in data_coll])
     data_coll = [doc for doc in data_coll if set(doc["scores"].keys()) == systems]
     for doc in data_coll:
@@ -136,7 +140,8 @@ def main():
     parser.add_argument("--split", default="dev_asr")
     parser.add_argument("--score-suffix", default="",
                         help="Suffix on score files, e.g. 'audio' for output_scores_..._audio.jsonl")
-    parser.add_argument("--wer-csv", default="data/wer_dev_asr.csv")
+    parser.add_argument("--wer-csv", required=True,
+                        help="Path to WER CSV (e.g. data/wer_analysis/wer_dev_asr.csv)")
     parser.add_argument("--results-csv", default="data/wer_analysis/wer_correlation_results.csv")
     parser.add_argument("--challenge-results-csv", default=None,
                         help="Path for challenge results CSV (default: auto-named with threshold)")
@@ -157,28 +162,16 @@ def main():
     for lang_pair in LANG_PAIRS:
         input_file = os.path.join(args.model_dir, f"input_data_{args.split}_{lang_pair}.jsonl")
         if not os.path.exists(input_file):
-            print(f"Skipping {lang_pair} (no input file found)")
             continue
 
         data = load_data(args.model_dir, args.split, lang_pair, args.score_suffix)
 
         # attach WER
-        matched, missing = 0, 0
         for line in data:
             key = (line["audio_path"], line["doc_id"], line["tgt_system"], line["tgt_lang"])
-            w = wer_lookup.get(key)
-            if w is None:
-                missing += 1
-            line["wer"] = w
-            matched += (w is not None)
-        if missing:
-            print(f"  {lang_pair}: {missing} examples missing WER")
+            line["wer"] = wer_lookup.get(key)
 
         results[lang_pair] = {}
-        print(f"\n{lang_pair}:")
-        print(f"  {'Bucket':<12} {'N':>6}  {'Seg-level':>10}  {'Sys-level':>10}")
-        print(f"  {'-'*46}")
-
         for label, lo, hi in BUCKETS:
             subset = [l for l in data if l["wer"] is not None and lo <= l["wer"] < hi]
             n = len(subset)
@@ -188,9 +181,6 @@ def main():
                 seg = segment_level(subset)
                 sys = system_level(subset)
             results[lang_pair][label] = {"seg": seg, "sys": sys, "n": n}
-            seg_str = f"{seg:.1%}" if not np.isnan(seg) else "  n/a"
-            sys_str = f"{sys:.1%}" if not np.isnan(sys) else "  n/a"
-            print(f"  {label:<12} {n:>6}  {seg_str:>10}  {sys_str:>10}")
 
         # overall
         data_with_wer = [l for l in data if l["wer"] is not None]
@@ -199,23 +189,16 @@ def main():
         sys_all = system_level(data_with_wer)
         wer_r, wer_p = wer_vs_corr(data_with_wer)
         results[lang_pair]["_all"] = {"seg": seg_all, "sys": sys_all, "wer_r": wer_r, "wer_p": wer_p}
-        wer_r_str = f"{wer_r:+.3f} (p={wer_p:.3f})" if not np.isnan(wer_r) else "  n/a"
-        print(f"  {'ALL':<12} {len(all_data):>6}  {seg_all:.1%}  {sys_all:.1%}")
-        print(f"  WER vs seg-corr (Spearman r): {wer_r_str}")
 
     # Challenge set: high-QE examples (score >= threshold), same WER bins as full analysis
     CHALLENGE_BUCKETS = BUCKETS
     challenge_results = {}  # lang_pair -> bucket_label -> {seg, sys, n}
     thresh = args.challenge_score_threshold
-    print(f"\n=== Challenge set (human score ≥ {thresh:.0f}) ===")
     for lang_pair in LANG_PAIRS:
         if lang_pair not in results:
             continue
         high_qe = [l for l in all_data[lang_pair] if float(l["score"]) >= thresh]
         challenge_results[lang_pair] = {}
-        print(f"\n{lang_pair}  (n={len(high_qe)} with score≥{thresh:.0f}):")
-        print(f"  {'Bucket':<22} {'N':>6}  {'Seg-level':>10}  {'Sys-level':>10}")
-        print(f"  {'-'*54}")
         for label, lo, hi in CHALLENGE_BUCKETS:
             subset = [l for l in high_qe if lo <= l["wer"] < hi]
             n = len(subset)
@@ -225,9 +208,6 @@ def main():
                 seg = segment_level(subset)
                 sys = system_level(subset)
             challenge_results[lang_pair][label] = {"seg": seg, "sys": sys, "n": n}
-            seg_str = f"{seg:.1%}" if not np.isnan(seg) else "  n/a"
-            sys_str = f"{sys:.1%}" if not np.isnan(sys) else "  n/a"
-            print(f"  {label:<22} {n:>6}  {seg_str:>10}  {sys_str:>10}")
 
     # Build CSV row
     bucket_labels = [b[0] for b in BUCKETS]
@@ -294,7 +274,6 @@ def main():
     numeric_cols = [c for c in ordered_cols if c != "model"]
     df[numeric_cols] = df[numeric_cols].round(4)
     df[ordered_cols].to_csv(csv_path, index=False)
-    print(f"\nResults saved to {csv_path}")
 
     # Challenge CSV
     challenge_bucket_labels = [b[0] for b in CHALLENGE_BUCKETS]
@@ -327,12 +306,10 @@ def main():
     numeric_cols = [c for c in challenge_ordered_cols if c != "model"]
     cdf[numeric_cols] = cdf[numeric_cols].round(4)
     cdf[challenge_ordered_cols].to_csv(csv_challenge_path, index=False)
-    print(f"Challenge results saved to {csv_challenge_path}")
 
     # Plot
     n_langs = len(results)
     if n_langs == 0:
-        print("No results to plot.")
         return
 
     fig, axes = plt.subplots(2, n_langs, figsize=(6 * n_langs, 8), squeeze=False)
@@ -357,7 +334,6 @@ def main():
     fig.suptitle(f"Correlation by WER bucket — {model_name}", fontsize=13)
     plt.tight_layout()
     plt.savefig(plot_path, dpi=150)
-    print(f"\nPlot saved to {plot_path}")
 
 
 if __name__ == "__main__":

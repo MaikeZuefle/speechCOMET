@@ -18,36 +18,67 @@ MODELS=(
     skye-20ep
 )
 
-THRESHOLDS=(80 90)
+WER_CSV="data/wer_analysis/wer_dev_asr.csv"
+THRESHOLDS=(80) # 90
 
-for model_name in "${MODELS[@]}"; do
-    model_dir="$CHECKPOINT_FOLDER/$model_name"
-    if ls "${model_dir}"/output_scores_${SPLIT}_*.jsonl 2>/dev/null | grep -q .; then
-        echo "=== $model_name ==="
+# for model_name in "${MODELS[@]}"; do
+#     model_dir="$CHECKPOINT_FOLDER/$model_name"
+#     if ls "${model_dir}"/output_scores_${SPLIT}_*.jsonl 2>/dev/null | grep -q .; then
+#         echo "=== $model_name ==="
+#         for thresh in "${THRESHOLDS[@]}"; do
+#             python evaluation/wer_correlation_analysis.py \
+#                 --model-dir "$model_dir" \
+#                 --split $SPLIT \
+#                 --wer-csv "$WER_CSV" \
+#                 --challenge-score-threshold $thresh
+#         done
+#     else
+#         echo "=== $model_name — no ${SPLIT} outputs found, skipping ==="
+#     fi
+# done
+
+# --- QE baselines ---
+for qe_method in qe-comet qe-comet-partial qe-blaser qe-speechqe; do
+    qe_dir="QE-baselines/results/$qe_method"
+    if ls "${qe_dir}"/output_scores_${SPLIT}_*.jsonl 2>/dev/null | grep -q .; then
+        echo "=== $qe_method ==="
         for thresh in "${THRESHOLDS[@]}"; do
             python evaluation/wer_correlation_analysis.py \
-                --model-dir "$model_dir" \
+                --model-dir "$qe_dir" \
                 --split $SPLIT \
+                --wer-csv "$WER_CSV" \
                 --challenge-score-threshold $thresh
         done
     else
-        echo "=== $model_name — no ${SPLIT} outputs found, skipping ==="
+        echo "=== $qe_method — no ${SPLIT} outputs found, skipping ==="
     fi
 done
 
-# --- SpeechLLM baselines (Qwen) ---
-QWEN_DIR="speechllm-baselines/Qwen_Qwen2.5-Omni-7B"
-for modality in text audio audiotext; do
-    if ls "${QWEN_DIR}"/output_scores_${SPLIT}_*_${modality}.jsonl 2>/dev/null | grep -q .; then
-        echo "=== Qwen2.5-Omni (${modality}) ==="
-        for thresh in "${THRESHOLDS[@]}"; do
-            python evaluation/wer_correlation_analysis.py \
-                --model-dir "$QWEN_DIR" \
-                --split $SPLIT \
-                --score-suffix "$modality" \
-                --challenge-score-threshold $thresh
-        done
-    else
-        echo "=== Qwen2.5-Omni (${modality}) — no ${SPLIT} outputs found, skipping ==="
-    fi
-done
+# # --- SpeechLLM models (base + FT, format: output_name:modality) ---
+# SPEECHLLM_RESULTS="speechllm-baselines/results"
+# SPEECHLLM_MODELS=(
+#     "Qwen_Qwen2.5-Omni-7B:text"
+#     "Qwen_Qwen2.5-Omni-7B:audio"
+#     "Qwen_Qwen2.5-Omni-7B:audiotext"
+#     "Qwen_Qwen2.5-Omni-7B-iwslt26-text:text"
+#     "Qwen_Qwen2.5-Omni-7B-iwslt26-audio:audio"
+#     "Qwen_Qwen2.5-Omni-7B-iwslt26-textaudio:audiotext"
+# )
+# for entry in "${SPEECHLLM_MODELS[@]}"; do
+#     model_name="${entry%%:*}"
+#     modality="${entry##*:}"
+#     model_dir="$SPEECHLLM_RESULTS/$model_name"
+#     if ls "${model_dir}"/output_scores_${SPLIT}_*_${modality}.jsonl 2>/dev/null | grep -q .; then
+#         echo "=== $model_name (${modality}) ==="
+#         for thresh in "${THRESHOLDS[@]}"; do
+#             python evaluation/wer_correlation_analysis.py \
+#                 --model-dir "$model_dir" \
+#                 --split $SPLIT \
+#                 --wer-csv "$WER_CSV" \
+#                 --score-suffix "$modality" \
+#                 --challenge-score-threshold $thresh
+#         done
+#     else
+#         echo "=== $model_name (${modality}) — no ${SPLIT} outputs found, skipping ==="
+#     fi
+# done

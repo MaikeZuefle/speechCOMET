@@ -9,7 +9,6 @@ import argparse
 import glob
 import os
 import re
-from collections import defaultdict
 
 import pandas as pd
 
@@ -20,7 +19,7 @@ WAV_DIR_RELATIVE = "../wav"
 
 
 def load_csv_files(tsv_dir):
-    """Load all MONOLINGUAL *.csv files and tag each row with lang and category."""
+    """Load all MONOLINGUAL *.csv files, filter known-missing audio, and tag each row."""
     pattern = os.path.join(tsv_dir, "MONOLINGUAL.*.csv")
     csv_files = sorted(glob.glob(pattern))
     if not csv_files:
@@ -32,7 +31,7 @@ def load_csv_files(tsv_dir):
         basename = os.path.basename(path)
         m = re.match(r"MONOLINGUAL\.([a-z]+)_v[\d.]+\.tsv\.([12][FM])\.csv", basename)
         if not m:
-            print(f"Skipping {basename} (no category suffix)")
+            print(f"  Skipping {basename} (no category suffix — likely a duplicate)")
             continue
         lang, category = m.group(1), m.group(2)
         df = pd.read_csv(path)
@@ -42,29 +41,58 @@ def load_csv_files(tsv_dir):
             lambda p: os.path.join(wav_dir, os.path.basename(p))
         )
         frames.append(df)
-        print(f"  Loaded {len(df):4d} rows from {basename}  (lang={lang}, category={category})")
+        print(f"  Loaded {len(df):4d} rows  {basename}  (lang={lang}, category={category})")
 
-    return pd.concat(frames, ignore_index=True)
+    df = pd.concat(frames, ignore_index=True)
+
+    # Filter out known-missing audio files (documented in missing.txt)
+    missing_txt = os.path.join(os.path.dirname(tsv_dir), "missing.txt")
+    missing_mask = ~df["audio_path"].apply(os.path.exists)
+    if missing_mask.any():
+        missing_files = df.loc[missing_mask, "audio_path"].apply(os.path.basename).unique()
+        print(f"\n*** WARNING: {missing_mask.sum()} rows ({len(missing_files)} wav files) MISSING ***")
+        for lang, grp in df[missing_mask].groupby("lang"):
+            print(f"  {lang}: {grp['audio_path'].nunique()} pairs missing")
+        print(f"  Full list: {missing_txt}\n")
+        df = df[~missing_mask].reset_index(drop=True)
+
+    return df
 
 
-def compute_results(df):
+def compute_results(df, score_col="model_score"):
     rows = []
 
     for (lang, cat), group in df.groupby(["lang", "category"]):
-        acc, gap, n = pairwise_accuracy(group)
+        acc, gap, n = pairwise_accuracy(group, score_col=score_col)
         rows.append({"lang": lang, "category": cat, "n_pairs": n,
                      "pairwise_acc": acc, "mean_score_gap": gap})
 
     for lang, group in df.groupby("lang"):
-        acc, gap, n = pairwise_accuracy(group)
+        acc, gap, n = pairwise_accuracy(group, score_col=score_col)
         rows.append({"lang": lang, "category": "ALL", "n_pairs": n,
                      "pairwise_acc": acc, "mean_score_gap": gap})
 
-    acc, gap, n = pairwise_accuracy(df)
+    acc, gap, n = pairwise_accuracy(df, score_col=score_col)
     rows.append({"lang": "ALL", "category": "ALL", "n_pairs": n,
                  "pairwise_acc": acc, "mean_score_gap": gap})
 
     return pd.DataFrame(rows).sort_values(["lang", "category"])
+
+
+def print_mustshe_pivot(results: pd.DataFrame, modality: str = ""):
+    """Print a lang × category pivot of pairwise_acc."""
+    lang_results = results[results["lang"] != "ALL"]
+    pivot = lang_results.pivot(index="lang", columns="category", values="pairwise_acc")
+    if "ALL" in pivot.columns:
+        cols = [c for c in pivot.columns if c != "ALL"] + ["ALL"]
+        pivot = pivot[cols]
+    pivot.columns.name = None
+    pivot.index.name = "lang"
+    header = f"=== MuST-SHE Pairwise Accuracy ({modality}) ===" if modality else "=== MuST-SHE Pairwise Accuracy ==="
+    print(f"\n{header}")
+    print(pivot.map(lambda x: f"{x:.3f}" if x == x else "—").to_string())
+    overall = results[(results["lang"] == "ALL") & (results["category"] == "ALL")].iloc[0]
+    print(f"Overall: {overall['pairwise_acc']:.3f}  (n={int(overall['n_pairs'])}, mean gap={overall['mean_score_gap']:.4f})\n")
 
 
 def main():
@@ -92,17 +120,6 @@ def main():
 
     print(f"\nLoading MuST-SHE CSV files from {args.mustshe_dir}")
     df = load_csv_files(args.mustshe_dir)
-
-    if args.modality != "text":
-        missing_mask = ~df["audio_path"].apply(os.path.exists)
-        if missing_mask.any():
-            missing_files = df.loc[missing_mask, "audio_path"].apply(os.path.basename).unique()
-            print(f"\n*** WARNING: {missing_mask.sum()} rows ({len(missing_files)} wav files) missing — SKIPPED ***")
-            for lang, grp in df[missing_mask].groupby("lang"):
-                print(f"  {lang}: {grp['audio_path'].nunique()} pairs skipped")
-            print(f"  See data/MuST-SHE_v1.2/MuST-SHE-v1.2-data/missing.txt for full list\n")
-            df = df[~missing_mask].reset_index(drop=True)
-
     df = run_inference(df, model, args.batch_size, args.modality)
 
     scores_path = os.path.join(output_dir, "mustshe_scores.csv")
@@ -110,16 +127,7 @@ def main():
     print(f"\nSaved raw scores to {scores_path}")
 
     results = compute_results(df)
-
-    pivot = results[results["lang"] != "ALL"].pivot(
-        index="lang", columns="category", values="pairwise_acc"
-    ).rename(columns={"1F": "1F (female)", "1M": "1M (male)", "ALL": "overall"})
-    pivot.index.name = "lang"
-
-    print("\n=== MuST-SHE Pairwise Accuracy ===")
-    print(pivot.map(lambda x: f"{x:.3f}").to_string())
-    overall_acc, overall_gap, overall_n = pairwise_accuracy(df)
-    print(f"\nOverall: {overall_acc:.3f}  (n={overall_n}, mean gap={overall_gap:.4f})")
+    print_mustshe_pivot(results)
 
     results["pairwise_acc"] = results["pairwise_acc"].map(lambda x: f"{x:.3f}" if x == x else "nan")
     results["mean_score_gap"] = results["mean_score_gap"].map(lambda x: f"{x:.4f}" if x == x else "nan")

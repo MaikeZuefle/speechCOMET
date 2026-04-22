@@ -46,6 +46,15 @@ for ENTRY in "${MODELS[@]}"; do
         --split dev \
         --modality "$MODALITY"
 
+    cd ../../evaluation/iwslt26-metrics/
+    for scores_file in ../../$OUTPUT_DIR/output_scores_dev_*_${MODALITY}.jsonl; do
+        lang_pair=$(basename "$scores_file" .jsonl | sed "s/output_scores_dev_//;s/_${MODALITY}$//")
+        input_file="../../$OUTPUT_DIR/input_data_dev_${lang_pair}.jsonl"
+        echo "Evaluating dev $lang_pair ..."
+        python evaluation/__main__.py -i "$input_file" -m "$scores_file"
+    done
+    cd ../../src
+
     echo "--- dev_asr ---"
     python generate_qwen_omni.py \
         --model-name "$MODEL_PATH" \
@@ -53,6 +62,15 @@ for ENTRY in "${MODELS[@]}"; do
         --dataset "$DATASET" \
         --split dev_asr \
         --modality "$MODALITY"
+
+    cd ../../evaluation/iwslt26-metrics/
+    for scores_file in ../../$OUTPUT_DIR/output_scores_dev_asr_*_${MODALITY}.jsonl; do
+        lang_pair=$(basename "$scores_file" .jsonl | sed "s/output_scores_dev_asr_//;s/_${MODALITY}$//")
+        input_file="../../$OUTPUT_DIR/input_data_dev_asr_${lang_pair}.jsonl"
+        echo "Evaluating dev_asr $lang_pair ..."
+        python evaluation/__main__.py -i "$input_file" -m "$scores_file"
+    done
+    cd ../../src
 
     echo "--- MuST-SHE ---"
     python generate_qwen_omni.py \

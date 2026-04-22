@@ -85,7 +85,7 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--model-dir", required=True)
     parser.add_argument("--split", default="dev_asr")
-    parser.add_argument("--wer-csv", default="data/wer_dev_asr.csv")
+    parser.add_argument("--wer-csv", default=None)
     parser.add_argument("--results-csv", default="data/wer_correlation_results.csv")
     parser.add_argument("--output", default="data/wer_correlation.png")
     args = parser.parse_args()

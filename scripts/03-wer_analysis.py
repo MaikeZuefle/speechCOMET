@@ -32,8 +32,8 @@ def compute_wer(reference: str, hypothesis: str) -> float:
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--dataset", default="maikezu/scottish-metrics")
-    parser.add_argument("--output_plot", default="data/wer_distribution.png")
-    parser.add_argument("--output_csv", default="data/wer_dev_asr.csv")
+    parser.add_argument("--output_plot", default=None)
+    parser.add_argument("--output_csv", default=None)
     args = parser.parse_args()
 
     print(f"Loading {args.dataset}...")

@@ -4,11 +4,12 @@ import os
 import re
 
 import pandas as pd
-import speechcomet
-from speechcomet import download_model
+
 
 
 def load_model(model_folder=None, hf_model=None):
+    import speechcomet
+    from speechcomet import download_model
     if hf_model:
         model = speechcomet.load_from_checkpoint(download_model(hf_model))
         output_dir = hf_model.replace("/", "_")
@@ -52,14 +53,14 @@ def run_inference(df, model, batch_size, modality, audio_col="audio_path"):
     return df
 
 
-def pairwise_accuracy(df, key_col="audio_path"):
+def pairwise_accuracy(df, key_col="audio_path", score_col="model_score"):
     correct = df[df["score"] == 100].set_index(key_col)
     wrong   = df[df["score"] == 0  ].set_index(key_col)
     shared  = correct.index.intersection(wrong.index)
     if len(shared) == 0:
         return float("nan"), float("nan"), 0
-    wins = (correct.loc[shared, "model_score"].values > wrong.loc[shared, "model_score"].values).sum()
-    gap  = (correct.loc[shared, "model_score"].values - wrong.loc[shared, "model_score"].values).mean()
+    wins = (correct.loc[shared, score_col].values > wrong.loc[shared, score_col].values).sum()
+    gap  = (correct.loc[shared, score_col].values - wrong.loc[shared, score_col].values).mean()
     return wins / len(shared), gap, len(shared)
 
 

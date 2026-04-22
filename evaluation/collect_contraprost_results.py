@@ -89,12 +89,13 @@ def pivot_wide(df):
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--output", default="evaluation/contraprost_combined.csv")
+    parser.add_argument("--output", default="data/contraprost_analysis/contraprost_combined.csv")
     args = parser.parse_args()
 
     search_dirs = [
         "trained_models/*/contraprost_results.csv",
         "speechllm-baselines/*/contraprost/contraprost_results_*.csv",
+        "QE-baselines/results/*/contraprost_results.csv",
     ]
 
     print("Collecting ContraProST results...")
