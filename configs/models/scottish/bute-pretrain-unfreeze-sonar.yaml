@@ -3,13 +3,14 @@ speech_regression_metric:
   init_args:
     nr_frozen_epochs: 0.3
     keep_trg_embeddings_frozen: True
-    keep_src_embeddings_frozen: True
+    keep_src_embeddings_frozen: False
     optimizer: AdamW
     encoder_learning_rate: 1.0e-06
     learning_rate: 1.5e-05
     layerwise_decay: 0.95
     encoder_model: XLM-RoBERTa
     encoder_model_audio: sonar_speech_encoder_eng
+    sonar_ft_freeze_layers: 4
     input_modality: audio
     pretrained_model: xlm-roberta-base
     pool: avg
@@ -17,17 +18,17 @@ speech_regression_metric:
     layer_transformation: sparsemax
     layer_norm: False
     dropout: 0.1
-    batch_size: 2
+    batch_size: 1
     num_workers: 0
-    train_data: 
+    train_data:
       - maikezu/ben_nevis_tts
-    
+
     validation_data:
       - maikezu/ben_nevis_tts
-    
-      
-      
-trainer: ../../trainer_4gpu_accum2.yaml
+
+
+
+trainer: ../../trainer_1gpu_accum16.yaml
 early_stopping: ../../early_stopping.yaml
 model_checkpoint:
   class_path: pytorch_lightning.callbacks.model_checkpoint.ModelCheckpoint
