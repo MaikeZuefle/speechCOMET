@@ -12,6 +12,7 @@ import os
 import pandas as pd
 
 from eval_utils import load_model, run_inference, pairwise_accuracy, load_contraprost_csv_files
+from collect_contraprost_results import refresh_combined_csv
 
 
 def compute_results(df, score_col="model_score"):
@@ -101,6 +102,8 @@ def main():
     results_path = os.path.join(output_dir, "contraprost_results.csv")
     results.to_csv(results_path, index=False)
     print(f"\nSaved results to {results_path}")
+
+    refresh_combined_csv()
 
 
 if __name__ == "__main__":

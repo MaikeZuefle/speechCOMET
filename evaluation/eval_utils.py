@@ -2,8 +2,36 @@
 import glob
 import os
 import re
+import subprocess
 
 import pandas as pd
+
+
+def run_correlation_eval(output_dir, split, lang_pairs, eval_dir, score_suffix=""):
+    """Run iwslt26-metrics correlation evaluation, print results, and save to .txt files.
+
+    Args:
+        output_dir:    directory containing input_data and output_scores files
+        split:         dataset split, e.g. "dev_asr"
+        lang_pairs:    iterable of lang pairs to evaluate, e.g. ["en-de", "en-zh"]
+        eval_dir:      absolute path to evaluation/iwslt26-metrics/
+        score_suffix:  optional suffix on score filename, e.g. "text" for SpeechLLM
+    """
+    if not os.path.isdir(eval_dir):
+        raise FileNotFoundError(f"Evaluation dir not found: {eval_dir}")
+    suffix = f"_{score_suffix}" if score_suffix else ""
+    for lp in lang_pairs:
+        scores_file = os.path.abspath(os.path.join(output_dir, f"output_scores_{split}_{lp}{suffix}.jsonl"))
+        input_file  = os.path.abspath(os.path.join(output_dir, f"input_data_{split}_{lp}.jsonl"))
+        result = subprocess.run(
+            ["python", "evaluation/__main__.py", "-i", input_file, "-m", scores_file],
+            cwd=eval_dir, check=True, capture_output=True, text=True,
+        )
+        print(result.stdout)
+        corr_path = os.path.join(output_dir, f"correlation_{split}_{lp}.txt")
+        with open(corr_path, "w") as f:
+            f.write(result.stdout)
+        print(f"  Correlation results saved to {corr_path}")
 
 
 

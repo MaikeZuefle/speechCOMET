@@ -7,19 +7,21 @@ SPLIT=dev_asr
 
 # format: model_name:modality
 MODELS=(
-    harris-FT-sonar:audio
-    harris-20ep:audio
-    lewis-10ep:text
-    skye-20ep:text
-    shetland-20ep:audio
-    mull-avg-20ep:audio
-    mull-attn-10ep:audio
-    mull-attn-lora-10ep:audio
-    mull-avg-lora-10ep:audio
-    orkney-avg-20ep:audiotext
-    orkney-sum-20ep:audiotext
-    orkney-concat-20ep:audiotext
-    orkney-sum-from-text-ckpt-20ep:audiotext
+    # harris-FT-sonar:audio
+    # harris-20ep:audio
+    # lewis-10ep:text
+    # skye-20ep:text
+    # shetland-20ep:audio
+    # mull-avg-20ep:audio
+    # mull-attn-10ep:audio
+    # mull-attn-lora-10ep:audio
+    # mull-avg-lora-10ep:audio
+    #shetland-FT-sonar:audio
+    # orkney-sum-from-text-ckpt-20ep:audiotext
+    bute-pretrain:audio
+    # orkney-avg-20ep:audiotext
+    # orkney-sum-20ep:audiotext
+    # orkney-concat-20ep:audiotext
 )
 
 for ENTRY in "${MODELS[@]}"; do

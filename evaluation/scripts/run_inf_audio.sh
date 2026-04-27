@@ -10,6 +10,8 @@ MODEL_NAMES=(
     # shetland-20ep
     # harris-20ep-continue
     harris-FT-sonar
+    shetland-FT-sonar
+    #bute-pretrain
 )
 MODALITY=audio
 SPLIT=dev_asr  # dev or dev_asr
@@ -34,7 +36,7 @@ for MODEL_NAME in "${MODEL_NAMES[@]}"; do
 
     echo "=== Running inference for $MODEL_NAME ==="
 
-    # generation
+    generation
     python evaluation/run_inf.py \
       $MODEL_ARG \
       --dataset maikezu/scottish-metrics \
@@ -63,7 +65,7 @@ for MODEL_NAME in "${MODEL_NAMES[@]}"; do
     python evaluation/mustshe_eval.py \
         --mustshe-dir data/MuST-SHE_v1.2/MuST-SHE-v1.2-data/tsv \
         --modality $MODALITY \
-        --batch-size 32 \
+        --batch-size 1 \
         $MODEL_ARG
 
     # ContraProST pairwise accuracy

@@ -24,7 +24,7 @@ import pandas as pd
 # Allow imports from evaluation/ (eval_utils, mustshe_eval, contraprost_eval)
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "evaluation"))
 
-from eval_utils import load_contraprost_csv_files
+from eval_utils import load_contraprost_csv_files, run_correlation_eval
 import mustshe_eval as _mustshe
 import contraprost_eval as _contraprost
 
@@ -339,21 +339,8 @@ def run_dev(args, scorer, output_dir, modality):
         print(f"  Saved {lang_pair}: {len(grouped_scores[lang_pair])} scores → {scores_path}")
 
     # correlation evaluation
-    eval_dir = os.path.join("evaluation", "iwslt26-metrics")
-    if os.path.isdir(eval_dir):
-        for lang_pair in grouped_scores:
-            scores_file = os.path.abspath(os.path.join(output_dir, f"output_scores_{args.split}_{lang_pair}.jsonl"))
-            input_file  = os.path.abspath(os.path.join(output_dir, f"input_data_{args.split}_{lang_pair}.jsonl"))
-            result = subprocess.run(
-                ["python", "evaluation/__main__.py", "-i", input_file, "-m", scores_file],
-                cwd=eval_dir, check=True, capture_output=True, text=True)
-            corr_path = os.path.join(output_dir, f"correlation_{args.split}_{lang_pair}.txt")
-            with open(corr_path, "w") as f:
-                f.write(result.stdout)
-            print(result.stdout)
-            print(f"  Correlation results saved to {corr_path}")
-    else:
-        raise FileNotFoundError(f"Evaluation dir not found: {eval_dir}")
+    eval_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "evaluation", "iwslt26-metrics"))
+    run_correlation_eval(output_dir, args.split, grouped_scores.keys(), eval_dir)
 
     # WER correlation analysis
     if args.split == "dev_asr" and args.wer_csv:

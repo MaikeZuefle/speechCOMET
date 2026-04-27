@@ -87,20 +87,31 @@ def pivot_wide(df):
     return pivot
 
 
+SEARCH_DIRS = [
+    "trained_models/*/contraprost_results.csv",
+    "speechllm-baselines/*/contraprost/contraprost_results_*.csv",
+    "QE-baselines/results/*/contraprost_results.csv",
+]
+
+DEFAULT_OUTPUT = "data/contraprost_analysis/contraprost_combined.csv"
+
+
+def refresh_combined_csv(output_path=DEFAULT_OUTPUT):
+    """Regenerate the combined CSV from all model folders. Called after each eval run."""
+    df = collect(SEARCH_DIRS)
+    pivot = pivot_wide(df).round(3)
+    os.makedirs(os.path.dirname(output_path) or ".", exist_ok=True)
+    pivot.to_csv(output_path)
+    print(f"  Updated combined ContraProST table → {output_path}")
+
+
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--output", default="data/contraprost_analysis/contraprost_combined.csv")
+    parser.add_argument("--output", default=DEFAULT_OUTPUT)
     args = parser.parse_args()
 
-    search_dirs = [
-        "trained_models/*/contraprost_results.csv",
-        "speechllm-baselines/*/contraprost/contraprost_results_*.csv",
-        "QE-baselines/results/*/contraprost_results.csv",
-    ]
-
     print("Collecting ContraProST results...")
-    df = collect(search_dirs)
-    pivot = pivot_wide(df)
+    pivot = pivot_wide(collect(SEARCH_DIRS)).round(3)
 
     os.makedirs(os.path.dirname(args.output) or ".", exist_ok=True)
     pivot.to_csv(args.output)

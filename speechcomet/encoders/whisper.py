@@ -80,6 +80,10 @@ class WhisperEncoder(Encoder):
                 if waveform.shape[0] > 1:
                     waveform = waveform.mean(dim=0, keepdim=True)
                 sr = samples.sample_rate
+            elif isinstance(item, dict) and "array" in item:
+                import numpy as np
+                waveform = torch.from_numpy(np.array(item["array"], dtype="float32")).unsqueeze(0)
+                sr = int(item["sampling_rate"])
             else:
                 waveform, sr = torchaudio.load(str(item))
 
