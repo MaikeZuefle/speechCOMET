@@ -1,31 +1,3 @@
-"""
-Qwen2.5-Omni evaluation with shuffled source inputs.
-
-For each example the source (audio / text) is replaced with the source
-from a randomly chosen *different* example in the same language pair
-(deterministic derangement, default seed=42).  The target text and
-human score are kept from the original example.
-
-Results are saved to <output_dir>/shuffled_src/.
-
-Usage (run from repo root):
-
-  # Zero-shot base model — one modality at a time
-  python speechllm-baselines/src/generate_qwen_omni_shuffled_src.py \\
-      --model-name Qwen/Qwen2.5-Omni-7B --modality text  --split dev_asr
-  python speechllm-baselines/src/generate_qwen_omni_shuffled_src.py \\
-      --model-name Qwen/Qwen2.5-Omni-7B --modality audio --split dev_asr
-  python speechllm-baselines/src/generate_qwen_omni_shuffled_src.py \\
-      --model-name Qwen/Qwen2.5-Omni-7B --modality audiotext --split dev_asr
-
-  # Fine-tuned models — each with its trained modality
-  python speechllm-baselines/src/generate_qwen_omni_shuffled_src.py \\
-      --model-name maikezu/Qwen2.5-Omni-7B-iwslt26-text      --modality text
-  python speechllm-baselines/src/generate_qwen_omni_shuffled_src.py \\
-      --model-name maikezu/Qwen2.5-Omni-7B-iwslt26-audio     --modality audio
-  python speechllm-baselines/src/generate_qwen_omni_shuffled_src.py \\
-      --model-name maikezu/Qwen2.5-Omni-7B-iwslt26-textaudio --modality audiotext
-"""
 import argparse
 import json
 import os
@@ -39,7 +11,9 @@ from tqdm import tqdm
 
 _here = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, _here)
+sys.path.insert(0, os.path.join(_here, "..", "..", "evaluation"))
 
+from eval_utils import run_correlation_eval
 from generate_qwen_omni import (
     build_conversation_audio,
     build_conversation_audiotext,
@@ -144,6 +118,10 @@ def run_eval(args):
             for s in grouped_scores[lp]:
                 f.write(json.dumps(s) + "\n")
         print(f"  Saved {lp}: {len(grouped_scores[lp])} scores")
+
+    # correlation evaluation
+    eval_dir = os.path.join(_base, "evaluation", "iwslt26-metrics")
+    run_correlation_eval(output_dir, args.split, grouped_scores.keys(), eval_dir, score_suffix=args.modality)
 
     print(f"Done. Results saved to {output_dir}/")
 

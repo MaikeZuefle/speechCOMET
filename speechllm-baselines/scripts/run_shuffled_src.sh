@@ -45,16 +45,6 @@ for ENTRY in "${MODELS[@]}"; do
         --dataset "$DATASET" \
         --split "$SPLIT" \
         --modality "$MODALITY"
-
-    # correlation evaluation
-    cd ../../evaluation/iwslt26-metrics/
-    for scores_file in "../../${OUTPUT_DIR}/shuffled_src/output_scores_${SPLIT}_"*_${MODALITY}.jsonl; do
-        lang_pair=$(basename "$scores_file" .jsonl | sed "s/output_scores_${SPLIT}_//;s/_${MODALITY}$//")
-        input_file="../../${OUTPUT_DIR}/shuffled_src/input_data_${SPLIT}_${lang_pair}.jsonl"
-        echo "Evaluating $lang_pair (shuffled src) ..."
-        python evaluation/__main__.py -i "$input_file" -m "$scores_file"
-    done
-    cd ../../speechllm-baselines/src
 done
 
 echo ""

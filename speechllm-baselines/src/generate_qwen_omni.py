@@ -16,35 +16,42 @@ from utils import (
     load_mustshe_csv_files, compute_mustshe_results, print_mustshe_pivot,
     load_contraprost_csv_files, compute_contraprost_results, print_contraprost_results,
 )
+from prompts import get_prompt, PROMPTS
 
-SYSTEM_PROMPT = "You are an evaluator. Given the source and/or audio and a translation, respond with only a single float score between 0 and 1 indicating translation quality. Output nothing else."
+_DEFAULT_PROMPT = PROMPTS["standard"]
 
-def build_conversation_text(src_text, mt_text):
+
+def build_conversation_text(src_text, mt_text, system_prompt=None):
+    prompt = system_prompt or _DEFAULT_PROMPT
     return [
-        {"role": "system", "content": [{"type": "text", "text": SYSTEM_PROMPT}]},
+        {"role": "system", "content": [{"type": "text", "text": prompt}]},
         {"role": "user", "content": [
             {"type": "text", "text": f"Source: {src_text}\nTranslation: {mt_text}"}
         ]},
     ]
 
-def build_conversation_audio(audio_array, sr, mt_text):
+
+def build_conversation_audio(audio_array, sr, mt_text, system_prompt=None):
+    prompt = system_prompt or _DEFAULT_PROMPT
     with tempfile.NamedTemporaryFile(suffix=".wav", delete=False) as tmp:
         sf.write(tmp.name, audio_array, sr)
         tmp_path = tmp.name
     return [
-        {"role": "system", "content": [{"type": "text", "text": SYSTEM_PROMPT}]},
+        {"role": "system", "content": [{"type": "text", "text": prompt}]},
         {"role": "user", "content": [
             {"type": "audio", "audio": tmp_path},
             {"type": "text", "text": f"Translation: {mt_text}"}
         ]},
     ], tmp_path
 
-def build_conversation_audiotext(audio_array, sr, src_text, mt_text):
+
+def build_conversation_audiotext(audio_array, sr, src_text, mt_text, system_prompt=None):
+    prompt = system_prompt or _DEFAULT_PROMPT
     with tempfile.NamedTemporaryFile(suffix=".wav", delete=False) as tmp:
         sf.write(tmp.name, audio_array, sr)
         tmp_path = tmp.name
     return [
-        {"role": "system", "content": [{"type": "text", "text": SYSTEM_PROMPT}]},
+        {"role": "system", "content": [{"type": "text", "text": prompt}]},
         {"role": "user", "content": [
             {"type": "audio", "audio": tmp_path},
             {"type": "text", "text": f"Source: {src_text}\nTranslation: {mt_text}"}
@@ -92,6 +99,7 @@ def predict_scores_batch(model, processor, conversations_batch):
 def run_eval(args):
     modalities = ["text", "audio", "audiotext"] if args.modality == "all" else [args.modality]
     need_audio = any(m in modalities for m in ("audio", "audiotext"))
+    sp = get_prompt(args.prompt)
 
     print(f"Loading model: {args.model_name}  (modalities: {modalities})")
     model = Qwen2_5OmniForConditionalGeneration.from_pretrained(
@@ -116,17 +124,17 @@ def run_eval(args):
         mt_text = entry["tgt_text"]
 
         if "text" in modalities:
-            text_convs.append(build_conversation_text(src_text, mt_text))
+            text_convs.append(build_conversation_text(src_text, mt_text, system_prompt=sp))
 
         if need_audio:
             audio_array = entry["audio"]["array"]
             sr = entry["audio"]["sampling_rate"]
             if "audio" in modalities:
-                audio_conv, tmp1 = build_conversation_audio(audio_array, sr, mt_text)
+                audio_conv, tmp1 = build_conversation_audio(audio_array, sr, mt_text, system_prompt=sp)
                 audio_convs.append(audio_conv)
                 tmp_files.append(tmp1)
             if "audiotext" in modalities:
-                audiotext_conv, tmp2 = build_conversation_audiotext(audio_array, sr, src_text, mt_text)
+                audiotext_conv, tmp2 = build_conversation_audiotext(audio_array, sr, src_text, mt_text, system_prompt=sp)
                 audiotext_convs.append(audiotext_conv)
                 tmp_files.append(tmp2)
 
@@ -177,6 +185,7 @@ def run_eval(args):
 def run_mustshe(args):
     modalities = ["text", "audio", "audiotext"] if args.modality == "all" else [args.modality]
     need_audio = any(m in modalities for m in ("audio", "audiotext"))
+    sp = get_prompt(args.prompt)
 
     print(f"Loading model: {args.model_name}  (modalities: {modalities})")
     model = Qwen2_5OmniForConditionalGeneration.from_pretrained(
@@ -184,8 +193,9 @@ def run_mustshe(args):
     )
     processor = Qwen2_5OmniProcessor.from_pretrained("Qwen/Qwen2.5-Omni-7B")
 
-    _base = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..")
-    output_dir = os.path.join(_base, args.output_name, "mustshe")
+    _base = os.path.join(os.path.dirname(os.path.abspath(__file__)), "../..")
+    subdir = "mustshe" if args.prompt == "standard" else f"mustshe_{args.prompt}"
+    output_dir = os.path.join(_base, args.output_name, subdir)
     os.makedirs(output_dir, exist_ok=True)
 
     print(f"\nLoading MuST-SHE CSV files from {args.mustshe_dir}")
@@ -194,15 +204,15 @@ def run_mustshe(args):
     text_convs, audio_convs, audiotext_convs, tmp_files = [], [], [], []
     for _, row in tqdm(df.iterrows(), total=len(df), desc="Building conversations"):
         if "text" in modalities:
-            text_convs.append(build_conversation_text(row["src"], row["mt"]))
+            text_convs.append(build_conversation_text(row["src"], row["mt"], system_prompt=sp))
         if need_audio:
             audio_array, sr = librosa.load(row["audio_path"], sr=None, mono=True)
             if "audio" in modalities:
-                audio_conv, tmp1 = build_conversation_audio(audio_array, sr, row["mt"])
+                audio_conv, tmp1 = build_conversation_audio(audio_array, sr, row["mt"], system_prompt=sp)
                 audio_convs.append(audio_conv)
                 tmp_files.append(tmp1)
             if "audiotext" in modalities:
-                audiotext_conv, tmp2 = build_conversation_audiotext(audio_array, sr, row["src"], row["mt"])
+                audiotext_conv, tmp2 = build_conversation_audiotext(audio_array, sr, row["src"], row["mt"], system_prompt=sp)
                 audiotext_convs.append(audiotext_conv)
                 tmp_files.append(tmp2)
 
@@ -243,6 +253,7 @@ def run_mustshe(args):
 def run_contraprost(args):
     modalities = ["text", "audio", "audiotext"] if args.modality == "all" else [args.modality]
     need_audio = any(m in modalities for m in ("audio", "audiotext"))
+    sp = get_prompt(args.prompt)
 
     print(f"Loading model: {args.model_name}  (modalities: {modalities})")
     model = Qwen2_5OmniForConditionalGeneration.from_pretrained(
@@ -250,8 +261,9 @@ def run_contraprost(args):
     )
     processor = Qwen2_5OmniProcessor.from_pretrained("Qwen/Qwen2.5-Omni-7B")
 
-    _base = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..")
-    output_dir = os.path.join(_base, args.output_name, "contraprost")
+    _base = os.path.join(os.path.dirname(os.path.abspath(__file__)), "../..")
+    subdir = "contraprost" if args.prompt == "standard" else f"contraprost_{args.prompt}"
+    output_dir = os.path.join(_base, args.output_name, subdir)
     os.makedirs(output_dir, exist_ok=True)
 
     print(f"\nLoading ContraProST CSV files from {args.contraprost_dir}")
@@ -260,15 +272,15 @@ def run_contraprost(args):
     text_convs, audio_convs, audiotext_convs, tmp_files = [], [], [], []
     for _, row in tqdm(df.iterrows(), total=len(df), desc="Building conversations"):
         if "text" in modalities:
-            text_convs.append(build_conversation_text(row["src"], row["mt"]))
+            text_convs.append(build_conversation_text(row["src"], row["mt"], system_prompt=sp))
         if need_audio:
             audio_array, sr = librosa.load(row["src_audio"], sr=None, mono=True)
             if "audio" in modalities:
-                audio_conv, tmp1 = build_conversation_audio(audio_array, sr, row["mt"])
+                audio_conv, tmp1 = build_conversation_audio(audio_array, sr, row["mt"], system_prompt=sp)
                 audio_convs.append(audio_conv)
                 tmp_files.append(tmp1)
             if "audiotext" in modalities:
-                audiotext_conv, tmp2 = build_conversation_audiotext(audio_array, sr, row["src"], row["mt"])
+                audiotext_conv, tmp2 = build_conversation_audiotext(audio_array, sr, row["src"], row["mt"], system_prompt=sp)
                 audiotext_convs.append(audiotext_conv)
                 tmp_files.append(tmp2)
 
@@ -324,6 +336,9 @@ if __name__ == "__main__":
     parser.add_argument("--modality", type=str, default="all",
                         choices=["text", "audio", "audiotext", "all"],
                         help="Which modality to score. Use 'all' for base model, specific modality for FT models.")
+    parser.add_argument("--prompt", type=str, default="standard",
+                        choices=list(PROMPTS.keys()),
+                        help="System prompt to use (default: standard)")
     args = parser.parse_args()
     if args.output_name is None:
         args.output_name = os.path.join("speechllm-baselines", args.model_name.replace("/", "_"))
