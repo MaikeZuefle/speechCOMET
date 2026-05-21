@@ -2,6 +2,8 @@
 
 [![HuggingFace Collection](https://img.shields.io/badge/HuggingFace-Collection-yellow?logo=huggingface)](https://huggingface.co/collections/maikezu/speechcomet)
 
+<p align="center"><img src="why_we_need_speech_for_st_eval.png" width="500"/></p>
+
 Speech translation models are increasingly capable of preserving speech-specific information (e.g. speaker gender, prosody, and emphasis), yet evaluation metrics remain blind to such phenomena.
 We meta-evaluate both text- and speech-based quality estimation metrics on two contrastive datasets targeting gender agreement and prosody, and find that both fall short, even when given direct access to the speech signal.
 We then train SpeechCOMET, a family of quality estimation models with speech encoders, and evaluate a state-of-the-art SpeechLLM as a judge.
