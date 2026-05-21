@@ -45,6 +45,7 @@ dependencies = [
     "peft==0.18.1",    
 ]
 
+
 [project.scripts]
 speechcomet-train = 'speechcomet.cli.train:train_command'
 speechcomet-score = 'speechcomet.cli.score:score_command'

@@ -1,0 +1,9 @@
+[submodule "speechcomet-eval/iwslt26-metrics"]
+	path = speechcomet-eval/iwslt26-metrics
+	url = git@github.com:zouharvi/iwslt26-metrics.git
+[submodule "baselines-QE/SpeechQE"]
+	path = baselines-QE/SpeechQE
+	url = https://github.com/h-j-han/SpeechQE.git
+[submodule "baselines-speechllm/LlamaFactory"]
+	path = baselines-speechllm/LlamaFactory
+	url = https://github.com/hiyouga/LlamaFactory.git

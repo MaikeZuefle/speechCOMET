@@ -1,0 +1,353 @@
+from datasets import load_dataset
+import json
+import os
+import argparse
+from collections import defaultdict
+from tqdm import tqdm
+import torch
+import librosa
+import soundfile as sf
+import tempfile
+import re
+
+from transformers import Qwen2_5OmniForConditionalGeneration, Qwen2_5OmniProcessor
+from qwen_omni_utils import process_mm_info
+from utils import (
+    load_mustshe_csv_files, compute_mustshe_results, print_mustshe_pivot,
+    load_contraprost_csv_files, compute_contraprost_results, print_contraprost_results,
+)
+from prompts import get_prompt, PROMPTS
+
+_DEFAULT_PROMPT = PROMPTS["standard"]
+
+
+def build_conversation_text(src_text, mt_text, system_prompt=None):
+    prompt = system_prompt or _DEFAULT_PROMPT
+    return [
+        {"role": "system", "content": [{"type": "text", "text": prompt}]},
+        {"role": "user", "content": [
+            {"type": "text", "text": f"Source: {src_text}\nTranslation: {mt_text}"}
+        ]},
+    ]
+
+
+def build_conversation_audio(audio_array, sr, mt_text, system_prompt=None):
+    prompt = system_prompt or _DEFAULT_PROMPT
+    with tempfile.NamedTemporaryFile(suffix=".wav", delete=False) as tmp:
+        sf.write(tmp.name, audio_array, sr)
+        tmp_path = tmp.name
+    return [
+        {"role": "system", "content": [{"type": "text", "text": prompt}]},
+        {"role": "user", "content": [
+            {"type": "audio", "audio": tmp_path},
+            {"type": "text", "text": f"Translation: {mt_text}"}
+        ]},
+    ], tmp_path
+
+
+def build_conversation_audiotext(audio_array, sr, src_text, mt_text, system_prompt=None):
+    prompt = system_prompt or _DEFAULT_PROMPT
+    with tempfile.NamedTemporaryFile(suffix=".wav", delete=False) as tmp:
+        sf.write(tmp.name, audio_array, sr)
+        tmp_path = tmp.name
+    return [
+        {"role": "system", "content": [{"type": "text", "text": prompt}]},
+        {"role": "user", "content": [
+            {"type": "audio", "audio": tmp_path},
+            {"type": "text", "text": f"Source: {src_text}\nTranslation: {mt_text}"}
+        ]},
+    ], tmp_path
+
+
+def predict_scores_batch(model, processor, conversations_batch):
+    """Process a batch of conversations at once, returns list of floats."""
+    texts = [
+        processor.apply_chat_template(conv, add_generation_prompt=True, tokenize=False)
+        for conv in conversations_batch
+    ]
+
+    audios, images, videos = process_mm_info(conversations_batch, use_audio_in_video=False)
+
+    inputs = processor(
+        text=texts,
+        audio=audios,
+        images=images,
+        videos=videos,
+        return_tensors="pt", padding=True, use_audio_in_video=False
+    )
+    inputs = inputs.to(model.device).to(model.dtype)
+
+    input_len = inputs["input_ids"].shape[1]
+
+    with torch.no_grad():
+        text_ids = model.generate(**inputs, use_audio_in_video=False, max_new_tokens=16, return_audio=False)
+
+    text_ids = text_ids[:, input_len:]
+    decoded = processor.batch_decode(text_ids, skip_special_tokens=True, clean_up_tokenization_spaces=False)
+
+    scores = []
+    for raw in decoded:
+        raw = raw.strip()
+        try:
+            scores.append(float(raw))
+        except ValueError:
+            match = re.search(r"\d+\.?\d*", raw)
+            scores.append(float(match.group()) if match else 0.0)
+    return scores
+
+
+def run_eval(args):
+    modalities = ["text", "audio", "audiotext"] if args.modality == "all" else [args.modality]
+    need_audio = any(m in modalities for m in ("audio", "audiotext"))
+    sp = get_prompt(args.prompt)
+
+    print(f"Loading model: {args.model_name}  (modalities: {modalities})")
+    model = Qwen2_5OmniForConditionalGeneration.from_pretrained(
+        args.model_name, torch_dtype="auto", device_map="auto"
+    )
+    processor = Qwen2_5OmniProcessor.from_pretrained("Qwen/Qwen2.5-Omni-7B")
+
+    _base = os.path.join(os.path.dirname(os.path.abspath(__file__)), "../..")
+    output_dir = os.path.join(_base, args.output_name)
+    os.makedirs(output_dir, exist_ok=True)
+
+    dataset = load_dataset(args.dataset)[args.split]
+
+    grouped_scores = defaultdict(list)
+    grouped_outputs = defaultdict(list)
+
+    all_entries = []
+    text_convs, audio_convs, audiotext_convs, tmp_files = [], [], [], []
+
+    for entry in tqdm(dataset, desc="Building conversations"):
+        src_text = entry["src_text"]
+        mt_text = entry["tgt_text"]
+
+        if "text" in modalities:
+            text_convs.append(build_conversation_text(src_text, mt_text, system_prompt=sp))
+
+        if need_audio:
+            audio_array = entry["audio"]["array"]
+            sr = entry["audio"]["sampling_rate"]
+            if "audio" in modalities:
+                audio_conv, tmp1 = build_conversation_audio(audio_array, sr, mt_text, system_prompt=sp)
+                audio_convs.append(audio_conv)
+                tmp_files.append(tmp1)
+            if "audiotext" in modalities:
+                audiotext_conv, tmp2 = build_conversation_audiotext(audio_array, sr, src_text, mt_text, system_prompt=sp)
+                audiotext_convs.append(audiotext_conv)
+                tmp_files.append(tmp2)
+
+        lang_pair = f"{entry['src_lang']}-{entry['tgt_lang']}"
+        output = {k: v for k, v in entry.items() if k != "audio"}
+        all_entries.append((lang_pair, output))
+
+    BATCH_SIZE = 1
+
+    def run_batched(convs, desc):
+        scores = []
+        for batch_start in tqdm(range(0, len(convs), BATCH_SIZE), desc=desc):
+            batch = convs[batch_start:batch_start + BATCH_SIZE]
+            scores.extend(predict_scores_batch(model, processor, batch))
+        return scores
+
+    scores_by_modality = {}
+    if "text" in modalities:
+        scores_by_modality["text"] = run_batched(text_convs, "Scoring text")
+        torch.cuda.empty_cache()
+    if "audio" in modalities:
+        scores_by_modality["audio"] = run_batched(audio_convs, "Scoring audio")
+        torch.cuda.empty_cache()
+    if "audiotext" in modalities:
+        scores_by_modality["audiotext"] = run_batched(audiotext_convs, "Scoring audiotext")
+        torch.cuda.empty_cache()
+
+    for path in tmp_files:
+        os.unlink(path)
+
+    n = len(all_entries)
+    for i, (lang_pair, output) in enumerate(all_entries):
+        grouped_scores[lang_pair].append({m: scores_by_modality[m][i] for m in modalities})
+        grouped_outputs[lang_pair].append(output)
+
+    for lang_pair in grouped_scores:
+        with open(f"{output_dir}/input_data_{args.split}_{lang_pair}.jsonl", "w", encoding="utf-8") as f:
+            for item in grouped_outputs[lang_pair]:
+                f.write(json.dumps(item, ensure_ascii=False) + "\n")
+        for m in modalities:
+            with open(f"{output_dir}/output_scores_{args.split}_{lang_pair}_{m}.jsonl", "w", encoding="utf-8") as f:
+                for score in grouped_scores[lang_pair]:
+                    f.write(json.dumps(score[m], ensure_ascii=False) + "\n")
+
+    print(f"Done. Results saved to {output_dir}/")
+
+
+def run_mustshe(args):
+    modalities = ["text", "audio", "audiotext"] if args.modality == "all" else [args.modality]
+    need_audio = any(m in modalities for m in ("audio", "audiotext"))
+    sp = get_prompt(args.prompt)
+
+    print(f"Loading model: {args.model_name}  (modalities: {modalities})")
+    model = Qwen2_5OmniForConditionalGeneration.from_pretrained(
+        args.model_name, torch_dtype="auto", device_map="auto"
+    )
+    processor = Qwen2_5OmniProcessor.from_pretrained("Qwen/Qwen2.5-Omni-7B")
+
+    _base = os.path.join(os.path.dirname(os.path.abspath(__file__)), "../..")
+    subdir = "mustshe" if args.prompt == "standard" else f"mustshe_{args.prompt}"
+    output_dir = os.path.join(_base, args.output_name, subdir)
+    os.makedirs(output_dir, exist_ok=True)
+
+    print(f"\nLoading MuST-SHE CSV files from {args.mustshe_dir}")
+    df = load_mustshe_csv_files(args.mustshe_dir)
+
+    text_convs, audio_convs, audiotext_convs, tmp_files = [], [], [], []
+    for _, row in tqdm(df.iterrows(), total=len(df), desc="Building conversations"):
+        if "text" in modalities:
+            text_convs.append(build_conversation_text(row["src"], row["mt"], system_prompt=sp))
+        if need_audio:
+            audio_array, sr = librosa.load(row["audio_path"], sr=None, mono=True)
+            if "audio" in modalities:
+                audio_conv, tmp1 = build_conversation_audio(audio_array, sr, row["mt"], system_prompt=sp)
+                audio_convs.append(audio_conv)
+                tmp_files.append(tmp1)
+            if "audiotext" in modalities:
+                audiotext_conv, tmp2 = build_conversation_audiotext(audio_array, sr, row["src"], row["mt"], system_prompt=sp)
+                audiotext_convs.append(audiotext_conv)
+                tmp_files.append(tmp2)
+
+    BATCH_SIZE = 1
+
+    def run_batched(convs, desc):
+        scores = []
+        for i in tqdm(range(0, len(convs), BATCH_SIZE), desc=desc):
+            scores.extend(predict_scores_batch(model, processor, convs[i:i + BATCH_SIZE]))
+        return scores
+
+    df = df.copy()
+    if "text" in modalities:
+        df["score_text"] = run_batched(text_convs, "Scoring text")
+        torch.cuda.empty_cache()
+    if "audio" in modalities:
+        df["score_audio"] = run_batched(audio_convs, "Scoring audio")
+        torch.cuda.empty_cache()
+    if "audiotext" in modalities:
+        df["score_audiotext"] = run_batched(audiotext_convs, "Scoring audiotext")
+        torch.cuda.empty_cache()
+
+    for path in tmp_files:
+        os.unlink(path)
+
+    scores_path = os.path.join(output_dir, "mustshe_scores.csv")
+    df.to_csv(scores_path, index=False)
+    print(f"\nSaved raw scores to {scores_path}")
+
+    for modality, col in [("text", "score_text"), ("audio", "score_audio"), ("audiotext", "score_audiotext")]:
+        if modality not in modalities:
+            continue
+        results = compute_mustshe_results(df, score_col=col)
+        print_mustshe_pivot(results, modality=modality)
+        results.to_csv(os.path.join(output_dir, f"mustshe_results_{modality}.csv"), index=False)
+
+
+def run_contraprost(args):
+    modalities = ["text", "audio", "audiotext"] if args.modality == "all" else [args.modality]
+    need_audio = any(m in modalities for m in ("audio", "audiotext"))
+    sp = get_prompt(args.prompt)
+
+    print(f"Loading model: {args.model_name}  (modalities: {modalities})")
+    model = Qwen2_5OmniForConditionalGeneration.from_pretrained(
+        args.model_name, torch_dtype="auto", device_map="auto"
+    )
+    processor = Qwen2_5OmniProcessor.from_pretrained("Qwen/Qwen2.5-Omni-7B")
+
+    _base = os.path.join(os.path.dirname(os.path.abspath(__file__)), "../..")
+    subdir = "contraprost" if args.prompt == "standard" else f"contraprost_{args.prompt}"
+    output_dir = os.path.join(_base, args.output_name, subdir)
+    os.makedirs(output_dir, exist_ok=True)
+
+    print(f"\nLoading ContraProST CSV files from {args.contraprost_dir}")
+    df = load_contraprost_csv_files(args.contraprost_dir)
+
+    text_convs, audio_convs, audiotext_convs, tmp_files = [], [], [], []
+    for _, row in tqdm(df.iterrows(), total=len(df), desc="Building conversations"):
+        if "text" in modalities:
+            text_convs.append(build_conversation_text(row["src"], row["mt"], system_prompt=sp))
+        if need_audio:
+            audio_array, sr = librosa.load(row["src_audio"], sr=None, mono=True)
+            if "audio" in modalities:
+                audio_conv, tmp1 = build_conversation_audio(audio_array, sr, row["mt"], system_prompt=sp)
+                audio_convs.append(audio_conv)
+                tmp_files.append(tmp1)
+            if "audiotext" in modalities:
+                audiotext_conv, tmp2 = build_conversation_audiotext(audio_array, sr, row["src"], row["mt"], system_prompt=sp)
+                audiotext_convs.append(audiotext_conv)
+                tmp_files.append(tmp2)
+
+    BATCH_SIZE = 1
+
+    def run_batched(convs, desc):
+        scores = []
+        for i in tqdm(range(0, len(convs), BATCH_SIZE), desc=desc):
+            scores.extend(predict_scores_batch(model, processor, convs[i:i + BATCH_SIZE]))
+        return scores
+
+    df = df.copy()
+    if "text" in modalities:
+        df["score_text"] = run_batched(text_convs, "Scoring text")
+        torch.cuda.empty_cache()
+    if "audio" in modalities:
+        df["score_audio"] = run_batched(audio_convs, "Scoring audio")
+        torch.cuda.empty_cache()
+    if "audiotext" in modalities:
+        df["score_audiotext"] = run_batched(audiotext_convs, "Scoring audiotext")
+        torch.cuda.empty_cache()
+
+    for path in tmp_files:
+        os.unlink(path)
+
+    scores_path = os.path.join(output_dir, "contraprost_scores.csv")
+    df.to_csv(scores_path, index=False)
+    print(f"\nSaved raw scores to {scores_path}")
+
+    for modality, col in [("text", "score_text"), ("audio", "score_audio"), ("audiotext", "score_audiotext")]:
+        if modality not in modalities:
+            continue
+        results = compute_contraprost_results(df, score_col=col)
+        print_contraprost_results(results, modality=modality)
+        results.to_csv(os.path.join(output_dir, f"contraprost_results_{modality}.csv"), index=False)
+
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--model-name", type=str, required=True,
+                        help="HuggingFace model ID or local path")
+    parser.add_argument("--output-name", type=str, default=None,
+                        help="Output path relative to repo root (default: speechllm-baselines/<model-name>)")
+    parser.add_argument("--dataset", type=str, default=None,
+                        help="HuggingFace dataset name (for standard eval)")
+    parser.add_argument("--split", type=str, default="dev",
+                        choices=["dev"],
+                        help="Dataset split to evaluate on")
+    parser.add_argument("--mustshe-dir", type=str, default=None,
+                        help="Path to MuST-SHE-v1.2-data/tsv/ for MuST-SHE eval")
+    parser.add_argument("--contraprost-dir", type=str, default=None,
+                        help="Path to contraProST directory containing en_*_expanded.csv files")
+    parser.add_argument("--modality", type=str, default="all",
+                        choices=["text", "audio", "audiotext", "all"],
+                        help="Which modality to score. Use 'all' for base model, specific modality for FT models.")
+    parser.add_argument("--prompt", type=str, default="standard",
+                        choices=list(PROMPTS.keys()),
+                        help="System prompt to use (default: standard)")
+    args = parser.parse_args()
+    if args.output_name is None:
+        args.output_name = os.path.join("baselines-speechllm", args.model_name.replace("/", "_"))
+
+    if args.mustshe_dir:
+        run_mustshe(args)
+    elif args.contraprost_dir:
+        run_contraprost(args)
+    elif args.dataset:
+        run_eval(args)
+    else:
+        parser.error("One of --dataset, --mustshe-dir, or --contraprost-dir must be provided")
