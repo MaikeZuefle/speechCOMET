@@ -27,6 +27,8 @@ from .multitask.xcomet_metric import XCOMETMetric
 from .ranking.ranking_metric import RankingMetric
 from .regression.referenceless import ReferencelessRegression
 from .regression.speech import SpeechRegression
+from .regression.speech_concat import SpeechRegressionConcat
+from .regression.speech_joint import SpeechRegressionJoint
 from .regression.regression_metric import RegressionMetric
 from .download_utils import download_model_legacy
 
@@ -34,6 +36,8 @@ from .download_utils import download_model_legacy
 str2model = {
     "referenceless_regression_metric": ReferencelessRegression,
     "speech_regression_metric": SpeechRegression,
+    "speech_concat_metric": SpeechRegressionConcat,
+    "speech_joint_metric": SpeechRegressionJoint,
     "regression_metric": RegressionMetric,
     "ranking_metric": RankingMetric,
     "unified_metric": UnifiedMetric,

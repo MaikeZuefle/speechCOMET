@@ -162,3 +162,5 @@ configs/models/scottish/shetland-FT-sonar-continue.yaml
 QE-baselines/SpeechQE
 QE-baselines/results
 speechllm-baselines/results
+train_with_resume_unfreeze_sonar.sh
+train_with_resume_whisper.sh

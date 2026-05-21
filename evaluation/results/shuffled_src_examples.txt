@@ -1,0 +1,404 @@
+=== en-de — top 50 ranked by audio shuffle drop ===
+
+#1  delta_audio=-8.7  delta_text=-55.6  real=69.1  human=65.0
+  src : So now we're better equipped to answer who do NLP datasets and models align with the most.
+  mt  : sind wir in der Lage, die Modelle mit den meisten Daten zu beantworten. Wir stellen fest, dass es sich
+
+#2  delta_audio=-8.7  delta_text=-32.2  real=39.2  human=40.0
+  src : Right.
+  mt  : Ansätze symmetrisch, richtig?
+
+#3  delta_audio=-7.8  delta_text=-22.3  real=63.7  human=60.0
+  src : The first one is uniform at random.
+  mt  : Die erste ist einheitlich.
+
+#4  delta_audio=-7.5  delta_text=-6.9  real=31.4  human=0.0
+  src : So, "salt and pepper" and not "pepper and salt", measured in syllables.
+  mt  : als die rechten Konjunktionen.
+
+#5  delta_audio=-7.2  delta_text=-52.1  real=56.4  human=40.0
+  src : Now for some results.
+  mt  : Manchmal haben wir Erfolge,
+
+#6  delta_audio=-7.1  delta_text=+1.5  real=72.9  human=0.0
+  src : So, "salt and pepper" and not "pepper and salt", measured in syllables.
+  mt  : dass die linken Konjunktionen kürzer sind als die rechten Konjunktionen.
+
+#7  delta_audio=-7.1  delta_text=+38.0  real=32.5  human=0.0
+  src : So a little bit of discussion.
+  mt  : die aus dem Sprachmodell resultieren. Bei
+
+#8  delta_audio=-6.6  delta_text=-44.0  real=54.4  human=0.0
+  src : That is the cross-attention mechanism, and you can see an example on the right.
+  mt  : dafür, wie wichtig es ist, aufmerksam zu sein.
+
+#9  delta_audio=-6.2  delta_text=-40.5  real=44.2  human=0.0
+  src : Thank you.
+  mt  : wenn Sie Fragen haben.
+
+#10  delta_audio=-5.5  delta_text=-18.6  real=65.3  human=0.0
+  src : In this work, we propose a diagnostic test suite for knowledge integration.
+  mt  : In this work, we propose a diagnostic test suite for knowledge integration.
+
+#11  delta_audio=-5.4  delta_text=-24.1  real=30.4  human=5.0
+  src : Right?
+  mt  : Ordnung, aber
+
+#12  delta_audio=-5.1  delta_text=-39.0  real=47.5  human=10.0
+  src : So a little bit of discussion.
+  mt  : ergeben, informieren können. In der Diskussion
+
+#13  delta_audio=-4.8  delta_text=-28.9  real=37.9  human=57.0
+  src : We find that there is positionality in NLP.
+  mt  : um die Position in Np handelt. Zum
+
+#14  delta_audio=-4.8  delta_text=-17.2  real=22.8  human=0.0
+  src : Ok.
+  mt  : herausgefunden?
+
+#15  delta_audio=-4.7  delta_text=+15.4  real=55.9  human=0.0
+  src : Ok.
+  mt  : Okay, also, was haben wir gemacht?
+
+#16  delta_audio=-4.6  delta_text=-54.8  real=50.7  human=60.0
+  src : Let's get started.
+  mt  : beginnen.
+
+#17  delta_audio=-4.5  delta_text=-10.4  real=10.0  human=0.0
+  src : OK.
+  mt  : produzieren.
+
+#18  delta_audio=-4.5  delta_text=-30.8  real=30.4  human=0.0
+  src : Right?
+  mt  : Ordnung, aber
+
+#19  delta_audio=-4.4  delta_text=-17.4  real=27.2  human=6.0
+  src : It's like between Scylla and Charybdis.
+  mt  : zwischen den Sprachräumen liegt.
+
+#20  delta_audio=-4.4  delta_text=-66.5  real=71.7  human=42.0
+  src : So we also did one experiment.
+  mt  : eine geringere Sensibilität. Wir haben auch ein Experiment durchgeführt:
+
+#21  delta_audio=-4.4  delta_text=-18.2  real=24.5  human=25.0
+  src : So a little bit of discussion.
+  mt  : die Verwendung von politischen Modellierungen der Sprache entstehen, angehen sollten.
+
+#22  delta_audio=-4.3  delta_text=-39.8  real=36.5  human=0.0
+  src : Describe yourself.".
+  mt  : verwendet.
+
+#23  delta_audio=-4.0  delta_text=-20.4  real=44.8  human=30.0
+  src : To no surprise, the classifier performed not much better than chance.
+  mt  : von Unterschieden, um keine Überraschung zu erzeugen, dass die Klassifikation nicht viel besser ist als die Chance.
+
+#24  delta_audio=-4.0  delta_text=-46.6  real=52.0  human=20.0
+  src : So the proportion is bigger of the left short conjunct.
+  mt  : der Anteil größer als der der kürzeren Konjunkt. Aber was in
+
+#25  delta_audio=-3.7  delta_text=-35.3  real=60.9  human=10.0
+  src : They single out one of the conjuncts.
+  mt  : sind, sie sich also aus den Konjugaten
+
+#26  delta_audio=-3.7  delta_text=-68.4  real=72.0  human=60.0
+  src : When you swap these two constituents, the sum of these two dependencies becomes 6.
+  mt  : und sie austauschen, wird die Summe dieser beiden Abhängigkeiten sechs
+
+#27  delta_audio=-3.7  delta_text=-49.3  real=57.0  human=20.0
+  src : So I'll concentrate on the right one.
+  mt  : das richtige ist. Was wir hier sagen, ist,
+
+#28  delta_audio=-3.7  delta_text=+6.5  real=58.5  human=2.0
+  src : And "Mary knew that the girl slept."
+  mt  : ein neues Trainingsprogramm für die Mädchen. Dies
+
+#29  delta_audio=-3.5  delta_text=-64.6  real=77.1  human=0.0
+  src : When you swap these two constituents, the sum of these two dependencies becomes 6.
+  mt  : und diese beiden Bestandteile verschieben, wird die Summe dieser beiden Abhängigkeiten sechs
+
+#30  delta_audio=-3.4  delta_text=+2.8  real=5.4  human=0.0
+  src : So a little bit of discussion.
+  mt  : müssen.
+
+#31  delta_audio=-3.4  delta_text=+12.6  real=16.2  human=0.0
+  src : Thank you for watching.
+  mt  : wie sich die konversationelle KI weiterentwickelt.
+
+#32  delta_audio=-3.4  delta_text=+14.7  real=14.7  human=0.0
+  src : So I'll concentrate on the right one.
+  mt  : ermittelt werden kann. Was wir sagen, ist, dass die Regierung auf der
+
+#33  delta_audio=-3.4  delta_text=-37.3  real=45.1  human=50.0
+  src : It's crucial for zero and one-shot prompting.
+  mt  : Es ist für Null und eins Prompts,
+
+#34  delta_audio=-3.2  delta_text=-38.6  real=44.5  human=40.0
+  src : It's okay the way instead of "it", we have this long NP.
+  mt  : faszinierend, okay, anstatt dessen, was wir haben.
+
+#35  delta_audio=-3.2  delta_text=-5.9  real=5.0  human=71.0
+  src : And et cetera.
+  mt  : u. a. und
+
+#36  delta_audio=-3.2  delta_text=-18.3  real=73.9  human=20.0
+  src : Recent works in tasks like question answering show that models can use pretrained-time knowledge to solve the task.
+  mt  : gegeben wird. Recent works in tasks like question answering show that models can use pre-trained time knowledge to solve the task. Aber die
+
+#37  delta_audio=-3.0  delta_text=-4.5  real=21.1  human=85.0
+  src : So why does this matter?
+  mt  : kann das Studium
+
+#38  delta_audio=-2.9  delta_text=-1.0  real=79.3  human=50.0
+  src : This works well, but trees are usually not given and need to be obtained somehow.
+  mt  : Das funktioniert zwar, aber normalerweise muss man es nicht haben.
+
+#39  delta_audio=-2.9  delta_text=-40.2  real=79.2  human=84.0
+  src : Given the low occurrence of dissonance and absence of any prior such data set, we are facing the problem of absolute rarity.
+  mt  : Häufigkeit und Abwesenheit jeglicher vorhergehender Datensätze stehen wir vor dem Problem der absoluten Häufigkeit.
+
+#40  delta_audio=-2.8  delta_text=-19.7  real=65.2  human=100.0
+  src : Use only one model for every latency regime and handle latency through specific parameters.
+  mt  : nur ein Modell für jedes Latenzregime und handhaben Sie die Latenz über spezifische Parameter.
+
+#41  delta_audio=-2.8  delta_text=-61.9  real=76.8  human=60.0
+  src : Further mentioning that "I don't think I could keep my job without them" justifies the second occurrence.
+  mt  : dass ich nicht glaube, dass ich meinen Job über ihnen behalten kann, stellt die zweite Aussage
+
+#42  delta_audio=-2.7  delta_text=+0.8  real=4.7  human=0.0
+  src : Thanks for listening.
+  mt  : präsentieren.
+
+#43  delta_audio=-2.7  delta_text=-39.6  real=51.9  human=0.0
+  src : Because then it can be moved to the position after the adjunct.
+  mt  : weil es dann nach dem Aufprall in
+
+#44  delta_audio=-2.7  delta_text=-55.2  real=75.9  human=40.0
+  src : So, we get some dependencies from end to all the conjuncts.
+  mt  : erhalten wir die Abhängigkeiten von Ende bis zu allen Kontrahenten.
+
+#45  delta_audio=-2.7  delta_text=-33.0  real=73.4  human=85.0
+  src : You can see how the combination of all ABC-Eval metrics explains over 25% of conversation quality, and as you remove the metrics one at a time, most of them result in losing a decent amount of information about the quality.
+  mt  : sehen, wie die Kombination aller A.B.C.E.-Werte über fünfundzwanzig Prozent der Konversationsqualität ausmacht, und wenn Sie die Metriken zu einem Zeitpunkt entfernen, ergibt sich die meiste Information über die Qualität. Auf
+
+#46  delta_audio=-2.6  delta_text=-2.4  real=59.8  human=30.0
+  src : In this case, "The girl slept."
+  mt  : Trainingsprogramm für die Mädchen und
+
+#47  delta_audio=-2.6  delta_text=-32.0  real=78.3  human=90.0
+  src : So these two trees only show the length of the crucial dependencies, the ones that are not constant among these two structures.
+  mt  : Von den kritischen Abhängigkeiten also diejenigen, die nicht konstant sind zwischen diesen beiden Strukturen, also hier
+
+#48  delta_audio=-2.6  delta_text=-27.3  real=73.7  human=100.0
+  src : After the first step, we have all the right tokens, but they're not ordered.
+  mt  : Nach dem ersten Schritt haben wir alle richtigen Token, aber sie sind nicht geordnet.
+
+#49  delta_audio=-2.6  delta_text=+29.2  real=9.4  human=0.0
+  src : Thank you for listening.
+  mt  : Experimenten.
+
+#50  delta_audio=-2.5  delta_text=-10.0  real=9.4  human=0.0
+  src : Thank you for listening.
+  mt  : Experimenten.
+
+=== en-zh — top 50 ranked by audio shuffle drop ===
+
+#1  delta_audio=-8.1  delta_text=-32.7  real=31.6  human=0.0
+  src : Thank you.
+  mt  : 讨论。
+
+#2  delta_audio=-8.1  delta_text=-54.6  real=52.6  human=0.0
+  src : Right?
+  mt  : ：
+
+#3  delta_audio=-6.5  delta_text=-43.3  real=39.8  human=0.0
+  src : Right?
+  mt  : 确），
+
+#4  delta_audio=-5.0  delta_text=-62.6  real=66.9  human=0.0
+  src : That's all.
+  mt  : 不客气，谢谢你！我
+
+#5  delta_audio=-4.4  delta_text=-14.0  real=79.3  human=0.0
+  src : Thanks.
+  mt  : 。
+
+#6  delta_audio=-4.3  delta_text=-52.0  real=50.1  human=0.0
+  src : Right?
+  mt  : 事实上
+
+#7  delta_audio=-3.7  delta_text=-46.4  real=51.6  human=47.0
+  src : It's absent in the second example "Homer came and sneezed."
+  mt  : 在第二个例子中，HomerCameandSneid了
+
+#8  delta_audio=-3.6  delta_text=-72.6  real=69.7  human=0.0
+  src : Right?
+  mt  : 因此，
+
+#9  delta_audio=-3.5  delta_text=-40.9  real=82.7  human=75.0
+  src : When you swap these two constituents, the sum of these two dependencies becomes 6.
+  mt  : 交换这两个构成部分时，这两个依赖关系的部分总和为6（正确
+
+#10  delta_audio=-3.5  delta_text=-25.3  real=76.9  human=83.0
+  src : When you swap these two constituents, the sum of these two dependencies becomes 6.
+  mt  : ng）这两个构成部分时，这些依赖关系中的某些会变成6个
+
+#11  delta_audio=-3.4  delta_text=-12.5  real=13.8  human=21.0
+  src : Which is the alternative question.
+  mt  : 这是
+
+#12  delta_audio=-3.4  delta_text=-26.2  real=29.5  human=26.0
+  src : It's like between Scylla and Charybdis.
+  mt  : 亚和克里比德斯之间的。
+
+#13  delta_audio=-3.4  delta_text=-0.7  real=81.0  human=92.0
+  src : In particular, they often fail to reproduce the systematic correspondences between input and output, such as those that are color-coded in the example.
+  mt  : 特别是它们经常无法重现输入和输出之间的系统性对应关系，如示例中所示的彩色编码。
+
+#14  delta_audio=-3.2  delta_text=-35.3  real=49.4  human=0.0
+  src : OK.
+  mt  : 昨天我读了
+
+#15  delta_audio=-3.2  delta_text=-25.4  real=80.0  human=93.0
+  src : Before these main steps, we first select a trigger set.
+  mt  : 测之前，我们首先选择一个触发器集。
+
+#16  delta_audio=-3.2  delta_text=-51.1  real=81.2  human=0.0
+  src : They single out one of the conjuncts.
+  mt  : 它们是单个连接组中的两个。
+
+#17  delta_audio=-3.2  delta_text=+47.4  real=13.8  human=0.0
+  src : Which is the alternative question.
+  mt  : 这是
+
+#18  delta_audio=-3.1  delta_text=-46.5  real=80.4  human=0.0
+  src : So, "salt and pepper" and not "pepper and salt", measured in syllables.
+  mt  : 合体短，这是因为盐和氯的测量单位不同。而且，通过观察也可以看出，随着时间的推
+
+#19  delta_audio=-3.1  delta_text=-19.6  real=83.9  human=60.0
+  src : So these two trees only show the length of the crucial dependencies, the ones that are not constant among these two structures.
+  mt  : 这两棵树只显示了关键依赖关系的长度，这些关系在这两种结构中是不恒定的。
+
+#20  delta_audio=-3.0  delta_text=-20.5  real=81.1  human=55.0
+  src : In addition, sometimes there are multiple permutations that are consistent with the data, but the linguistically correct one is latent.
+  mt  : 此外，有时会有多个与数据一致的置换，但从语言上来说正确的置换是隐性的。
+
+#21  delta_audio=-3.0  delta_text=-2.0  real=70.4  human=50.0
+  src : Note that the performance is significantly lower for random.
+  mt  : 管差异很小，注意到随机的性能显著低于。
+
+#22  delta_audio=-3.0  delta_text=-48.2  real=77.3  human=40.0
+  src : Now for some results.
+  mt  : 我们有时会发现一些结果，所以
+
+#23  delta_audio=-2.9  delta_text=-64.5  real=61.2  human=0.0
+  src : Hi!
+  mt  : Hi
+
+#24  delta_audio=-2.8  delta_text=-33.0  real=34.3  human=47.0
+  src : So in this case, Lisa.
+  mt  : 在这种情况下是I萨伊戈尔·米
+
+#25  delta_audio=-2.6  delta_text=-4.9  real=5.3  human=0.0
+  src : Thank you for listening.
+  mt  : .
+
+#26  delta_audio=-2.6  delta_text=-28.6  real=86.6  human=45.0
+  src : But if the previous sentence was "Could it be anything serious, doctor?", then "mole" refers to a birthmark.
+  mt  : 但如果前一句是“先生，事情会变得严重吗？”那么莫尔指的是出生证。
+
+#27  delta_audio=-2.6  delta_text=-29.2  real=28.7  human=0.0
+  src : It's okay the way instead of "it", we have this long NP.
+  mt  : 以这里的理由
+
+#28  delta_audio=-2.6  delta_text=-5.8  real=84.5  human=70.0
+  src : So what we do is that to simulate these longer sequences, we revisit the data sets themselves and then we recreate sentences by choosing acceptable or unacceptable sentences from those datasets.
+  mt  : 我们要模拟这些更长的序列，我们访问数据集本身，然后我们通过从这些数据集中选择“可接受的”或“不可接受的”句子来重新创建句子。因此，
+
+#29  delta_audio=-2.6  delta_text=-52.9  real=81.8  human=100.0
+  src : So when the difference between the lengths of the two conjuncts grows, the shorter conjunct prefers to be the first one, stronger, right?
+  mt  : 所以，当两个孔径之间的长度差异越大时，较短的孔径更倾向于是较强的，所以比例是左
+
+#30  delta_audio=-2.6  delta_text=-12.4  real=78.4  human=78.0
+  src : In particular, they often fail to reproduce the systematic correspondences between input and output, such as those that are color-coded in the example.
+  mt  : 特别是，他们经常无法在输入和输出之间产生系统的相互关联，例如在示例中被彩色编码的那些。
+
+#31  delta_audio=-2.5  delta_text=-13.8  real=84.1  human=64.0
+  src : But when we match the structure, that is when we choose the sentences from the same phenomena in BLiMP or SyntaxGym, we see a massive increase or a massive decrease of the MPP judgement for the model, depending on whether the chosen prefix is acceptable or unacceptable.
+  mt  : 但是，当我们匹配结构时，即从同一现象中选择句子时，我们在BLAMEPercentTax(GJM)中看到的是一个巨大的增加或巨大的降低的MP评判结果，取决于所选前缀是否可接受或不可接受。现
+
+#32  delta_audio=-2.5  delta_text=-71.5  real=80.9  human=63.0
+  src : After the first step, we have all the right tokens, but they're not ordered.
+  mt  : 第一步后，我们已经有了所有正确的token，但它们并没有被正确排序。
+
+#33  delta_audio=-2.4  delta_text=-52.1  real=76.0  human=53.0
+  src : So these two trees only show the length of the crucial dependencies, the ones that are not constant among these two structures.
+  mt  : 这两个树只显示了依赖关系的长度。在这些关键依赖关系中，依赖关系不在
+
+#34  delta_audio=-2.4  delta_text=-17.1  real=80.6  human=61.0
+  src : The cosine and L2 similarity between the requested embedding and the target embedding are computed.
+  mt  : 计算了请求的嵌入和目标嵌入之间的余弦相似度和余弦相似度。
+
+#35  delta_audio=-2.4  delta_text=-32.6  real=83.0  human=89.0
+  src : Positionality is simply the perspectives that people hold as a result of their demographics, identity, and life experiences.
+  mt  : 位置性质只是由于人口统计学、身份和生活经验而形成的观点。
+
+#36  delta_audio=-2.4  delta_text=-8.7  real=83.8  human=65.0
+  src : That's why in the second step we use another model to predict a permutation to put them into the right order.
+  mt  : 这就是为什么在第二步中，我们使用另一种模型来预测混血，以将它们放入正确的顺序。
+
+#37  delta_audio=-2.4  delta_text=-18.4  real=76.8  human=82.0
+  src : So now we're better equipped to answer who do NLP datasets and models align with the most.
+  mt  : 现在我们可以回答，谁在NLp数据中将模型与大多数模型对齐：
+
+#38  delta_audio=-2.3  delta_text=-15.1  real=85.0  human=70.0
+  src : If the language model has access to some partially overlapping background knowledge, then the accuracy is between 82 to 87%, which is more realistic.
+  mt  : 如果语言模型有对部分重叠的背景知识的访问，那么准确率在82%到87%之间，这更现实。
+
+#39  delta_audio=-2.3  delta_text=-8.4  real=81.1  human=59.0
+  src : So this shows the effect of different fine-tuning strategies on the model sensitivity.
+  mt  : 这表明模型敏感度的不同调节策略的效果：正如我们可以
+
+#40  delta_audio=-2.3  delta_text=-34.6  real=85.4  human=85.0
+  src : When we show this alternative question to the annotators, they know the name of these entities, but they don't necessarily know about the entities.
+  mt  : 当我们展示这些替代问题给注释者时，他们知道这些实体的名称，但他们不一定知道这些实体。
+
+#41  delta_audio=-2.3  delta_text=-52.6  real=78.2  human=80.0
+  src : Servin and Kea met at a park.
+  mt  : 塞尔文和凯亚在公园里见面，工作一整天
+
+#42  delta_audio=-2.3  delta_text=-54.5  real=81.4  human=94.0
+  src : The watermark method need to meet the following properties.
+  mt  : 水印方法必须符合以下属性：
+
+#43  delta_audio=-2.3  delta_text=-51.4  real=80.9  human=64.0
+  src : We're trying to revisit the MPP pipeline by asking the model to evaluate acceptability on longer and longer sequences.
+  mt  : 我们试图通过要求模型对更长和更长的序列进行可接受性评估来重新访问NBP管道。所以，
+
+#44  delta_audio=-2.2  delta_text=-49.0  real=82.1  human=57.0
+  src : But when we match the structure, that is when we choose the sentences from the same phenomena in BLiMP or SyntaxGym, we see a massive increase or a massive decrease of the MPP judgement for the model, depending on whether the chosen prefix is acceptable or unacceptable.
+  mt  : 当您添加可接受的前缀或不可接受的前缀时。但当我们匹配结构时，这就是我们从同一个现象中选择句子时的选择。我们看到MP的判断对模型的判断有大幅增加或大幅下降，取决于所选的前缀是否可接受或不可接受。现
+
+#45  delta_audio=-2.2  delta_text=-28.8  real=84.5  human=82.0
+  src : That's why in the second step we use another model to predict a permutation to put them into the right order.
+  mt  : 因此，在第二步，我们使用另一个模型来预测一个置换来将它们放入正确的顺序。
+
+#46  delta_audio=-2.2  delta_text=-72.2  real=80.3  human=33.0
+  src : First, when does translation require context?
+  mt  : 首先，翻译需要联系吗？
+
+#47  delta_audio=-2.2  delta_text=-73.4  real=82.8  human=63.0
+  src : If it's a multi-modal generation task, we report Rouge-L. For NLP task, we report Rouge-L as well.
+  mt  : 如果是多模生成任务，我们报告RUGL；对于NRP任务，我们报告RUGL。
+
+#48  delta_audio=-2.2  delta_text=-8.8  real=86.1  human=53.0
+  src : When we move higher in the list, the entities become more similar to each other and it's usually harder to make the disambiguation.
+  mt  : 列表中的更高位置时，实体变得彼此更加相似，通常更难进行消歧。我们使用以下不同采样方法：
+
+#49  delta_audio=-2.1  delta_text=-53.7  real=84.1  human=86.0
+  src : So in this work, we revisit the minimal pair paradigms.
+  mt  : 在本工作中，我们重新审视最小对数对范式。
+
+#50  delta_audio=-2.1  delta_text=-18.1  real=82.2  human=76.0
+  src : And when we develop new taggers, what is needed for good generalization?
+  mt  : 当我们开发新的标签时，什么是好的泛化所需要的？
+

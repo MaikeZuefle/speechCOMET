@@ -44,7 +44,7 @@ from pytorch_lightning.loggers import TensorBoardLogger
 from speechcomet.models import (
     RankingMetric, ReferencelessRegression,
     RegressionMetric, UnifiedMetric,
-    SpeechRegression,
+    SpeechRegression, SpeechRegressionConcat, SpeechRegressionJoint,
 )
 
 torch.set_float32_matmul_precision('high')
@@ -63,6 +63,8 @@ def read_arguments() -> ArgumentParser:
     parser.add_argument("--cfg", action=ActionConfigFile)
     parser.add_subclass_arguments(RegressionMetric, "regression_metric")
     parser.add_subclass_arguments(SpeechRegression, "speech_regression_metric")
+    parser.add_subclass_arguments(SpeechRegressionConcat, "speech_concat_metric")
+    parser.add_subclass_arguments(SpeechRegressionJoint, "speech_joint_metric")
     parser.add_subclass_arguments(
         ReferencelessRegression, "referenceless_regression_metric"
     )
@@ -177,6 +179,44 @@ def initialize_model(configs):
             model = SpeechRegression(
                 **namespace_to_dict(configs.speech_regression_metric.init_args)
             )
+    elif configs.speech_concat_metric is not None:
+        print(
+            json.dumps(
+                configs.speech_concat_metric.init_args,
+                indent=4,
+                default=lambda x: x.__dict__,
+            )
+        )
+        model = SpeechRegressionConcat(
+            **namespace_to_dict(configs.speech_concat_metric.init_args)
+        )
+        if configs.load_from_checkpoint is not None:
+            logger.info(f"Loading weights from {configs.load_from_checkpoint}.")
+            checkpoint = torch.load(configs.load_from_checkpoint, map_location="cpu")
+            state_dict = checkpoint.get("state_dict", checkpoint)
+            model_sd = model.state_dict()
+            filtered = {k: v for k, v in state_dict.items()
+                        if k in model_sd and v.shape == model_sd[k].shape}
+            skipped = [k for k in state_dict if k not in filtered]
+            if skipped:
+                logger.info(f"Skipped {len(skipped)} mismatched keys: {skipped[:5]}{'...' if len(skipped) > 5 else ''}")
+            model.load_state_dict(filtered, strict=False)
+            logger.info(f"Loaded {len(filtered)} weights from checkpoint.")
+    elif configs.speech_joint_metric is not None:
+        print(json.dumps(configs.speech_joint_metric.init_args, indent=4, default=lambda x: x.__dict__))
+        model = SpeechRegressionJoint(**namespace_to_dict(configs.speech_joint_metric.init_args))
+        if configs.load_from_checkpoint is not None:
+            logger.info(f"Loading weights from {configs.load_from_checkpoint}.")
+            checkpoint = torch.load(configs.load_from_checkpoint, map_location="cpu")
+            state_dict = checkpoint.get("state_dict", checkpoint)
+            model_sd = model.state_dict()
+            filtered = {k: v for k, v in state_dict.items()
+                        if k in model_sd and v.shape == model_sd[k].shape}
+            skipped = [k for k in state_dict if k not in filtered]
+            if skipped:
+                logger.info(f"Skipped {len(skipped)} mismatched keys: {skipped[:5]}{'...' if len(skipped) > 5 else ''}")
+            model.load_state_dict(filtered, strict=False)
+            logger.info(f"Loaded {len(filtered)} weights from checkpoint.")
     elif configs.ranking_metric is not None:
         print(
             json.dumps(

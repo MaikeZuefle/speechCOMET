@@ -6,14 +6,27 @@ from a randomly chosen *different* example in the same language pair
 (deterministic derangement, default seed=42).  The target text and
 human score are kept from the original example.
 
-Results are saved to <output_dir>/shuffled_src/ and are compatible with
-the standard evaluation pipeline (wer_correlation_analysis.py, etc.).
+For audiotext models, --shuffle-modality controls which source is shuffled:
+  both  (default): shuffle audio AND text together (same random partner)
+  audio: shuffle audio only, keep real text source
+  text:  shuffle text only, keep real audio source
+
+Results are saved to:
+  shuffled_src/   (--shuffle-modality both, default)
+  shuffled_audio/ (--shuffle-modality audio)
+  shuffled_text/  (--shuffle-modality text)
 
 Usage (run from repo root):
     python evaluation/run_inf_shuffled_src.py \\
         --model-folder trained_models/harris-20ep \\
         --modality audio \\
         --split dev_asr
+
+    python evaluation/run_inf_shuffled_src.py \\
+        --model-folder trained_models/orkney-sum-from-text-ckpt-20ep \\
+        --modality audiotext \\
+        --split dev \\
+        --shuffle-modality audio
 """
 import argparse
 import glob
@@ -54,7 +67,8 @@ def run_eval(args):
         model = speechcomet.load_from_checkpoint(checkpoint)
         base_dir = args.model_folder
 
-    output_dir = os.path.join(base_dir, "shuffled_src")
+    subdir = {"both": "shuffled_src", "audio": "shuffled_audio", "text": "shuffled_text"}[args.shuffle_modality]
+    output_dir = os.path.join(base_dir, subdir)
     os.makedirs(output_dir, exist_ok=True)
 
     print(f"Loading {args.dataset}[{args.split}] ...")
@@ -81,7 +95,14 @@ def run_eval(args):
         elif args.modality == "audio":
             sample = {"src_audio": src["audio"], "mt": entry["tgt_text"]}
         elif args.modality in ("textaudio", "audiotext"):
-            sample = {"src_audio": src["audio"], "src": src["src_text"], "mt": entry["tgt_text"]}
+            if args.shuffle_modality == "both":
+                sample = {"src_audio": src["audio"], "src": src["src_text"], "mt": entry["tgt_text"]}
+            elif args.shuffle_modality == "audio":
+                # shuffle audio only, keep real text
+                sample = {"src_audio": src["audio"], "src": entry["src_text"], "mt": entry["tgt_text"]}
+            elif args.shuffle_modality == "text":
+                # shuffle text only, keep real audio
+                sample = {"src_audio": entry["audio"], "src": src["src_text"], "mt": entry["tgt_text"]}
         else:
             raise ValueError(f"Unknown modality: {args.modality}")
 
@@ -126,7 +147,15 @@ if __name__ == "__main__":
     parser.add_argument("--split", default="dev_asr", choices=["dev", "dev_asr"])
     parser.add_argument("--batch-size", type=int, default=40)
     parser.add_argument("--seed", type=int, default=42)
+    parser.add_argument("--shuffle-modality", default="both",
+                        choices=["both", "audio", "text"],
+                        help="Which source modality to shuffle (audiotext models only). "
+                             "'both' shuffles audio+text together (default); "
+                             "'audio' shuffles audio while keeping real text; "
+                             "'text' shuffles text while keeping real audio.")
     args = parser.parse_args()
     if not args.hf_model and not args.model_folder:
         parser.error("Either --hf-model or --model-folder must be provided")
+    if args.shuffle_modality != "both" and args.modality not in ("audiotext", "textaudio"):
+        parser.error("--shuffle-modality audio/text only applies to audiotext models")
     run_eval(args)

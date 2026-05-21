@@ -1,0 +1,38 @@
+\begin{table}[t]
+\centering
+\footnotesize
+\setlength{\tabcolsep}{4pt}
+\begin{tabular}{ll|rc}
+\toprule
+ & & \multicolumn{2}{c}{\textbf{Segment $\tau_b$ (\%)}} \\
+\cmidrule(lr){3-4}
+ & & \textbf{real src} & \textbf{$\Delta$ random} \\
+\midrule
+\multicolumn{4}{l}{\textit{Baselines}} \\
+\midrule
+\multirow{2}{*}{\textsc{Text}} & \textsc{COMETKiwi-Partial} & \cellcolor[RGB]{255,255,255}11.9 & \cellcolor[RGB]{249,251,253}-4.3 \\
+ & \textsc{COMETKiwi} & \cellcolor[RGB]{212,236,236}34.6 & \cellcolor[RGB]{194,215,235}-24.9 \\
+\multirow{2}{*}{\textsc{Speech}} & \textsc{SpeechQE} & \cellcolor[RGB]{221,240,240}29.8 & \cellcolor[RGB]{201,219,237}-22.5 \\
+ & \textsc{BLASER} & \cellcolor[RGB]{231,244,244}24.4 & \cellcolor[RGB]{220,232,243}-15.4 \\
+\midrule
+\multicolumn{4}{l}{\textit{SpeechCOMET}} \\
+\midrule
+\multirow{2}{*}{\textsc{Text}} & COMETKiwi$_{\text{RoBERTa}}^{\text{WMT}}$ & \cellcolor[RGB]{234,246,245}23.1 & \cellcolor[RGB]{231,239,247}-11.1 \\
+ & COMETKiwi$_{\text{RoBERTa}}^{\text{IWSLT}}$ & \cellcolor[RGB]{234,246,246}22.8 & \cellcolor[RGB]{229,238,246}-12.0 \\
+\multirow{2}{*}{\textsc{Speech}} & SpeechCOMET\textsubscript{SONAR} & \cellcolor[RGB]{239,248,248}20.1 & \cellcolor[RGB]{253,253,254}-3.1 \\
+ & SpeechCOMET\textsubscript{Whisper} & \cellcolor[RGB]{244,250,250}17.8 & \cellcolor[RGB]{255,255,255}-2.4 \\
+\textsc{Sp.+Txt} & SpeechCOMET & \cellcolor[RGB]{228,243,243}25.8 & \cellcolor[RGB]{213,228,241}-17.8 \\
+\textsc{Sp.+Txt} & SpeechCOMET$^\dagger$ & \cellcolor[RGB]{212,236,236}34.4 & \cellcolor[RGB]{180,206,231}-30.2 \\
+\midrule
+\multicolumn{4}{l}{\textit{SpeechLLM}} \\
+\midrule
+\multirow{2}{*}{\textsc{Text}} & SpeechLLM & \cellcolor[RGB]{201,232,231}40.4 & \cellcolor[RGB]{183,208,232}-29.2 \\
+ & \quad+FT & \cellcolor[RGB]{188,226,226}47.1 & \cellcolor[RGB]{157,191,223}-38.6 \\
+\multirow{2}{*}{\textsc{Speech}} & SpeechLLM & \cellcolor[RGB]{217,238,238}32.0 & \cellcolor[RGB]{186,209,232}-28.1 \\
+ & \quad+FT & \cellcolor[RGB]{202,232,231}40.1 & \cellcolor[RGB]{193,214,235}-25.5 \\
+\multirow{2}{*}{\textsc{Sp.+Txt}} & SpeechLLM & \cellcolor[RGB]{205,233,233}38.1 & \cellcolor[RGB]{161,193,224}-37.4 \\
+ & \quad+FT & \cellcolor[RGB]{183,224,223}49.9 & \cellcolor[RGB]{156,190,223}-39.2 \\
+\bottomrule
+\end{tabular}
+\caption{Effect of replacing the source input with a randomly mismatched one. Scores are averaged over de and zh. $\Delta$ = random$-$real: large negative values indicate the model uses the source signal; $\Delta \approx 0$ indicates the model ignores it. $^\dagger$Uses InfoXLM-large as text encoder.}\label{tab:random_src}
+\end{table}

@@ -254,7 +254,7 @@ def run_dev(args, scorer, output_dir, modality):
     import tempfile
     import soundfile as sf
     from datasets import load_dataset
-    dataset = load_dataset("maikezu/scottish-metrics")[args.split]
+    dataset = load_dataset(args.dataset)[args.split]
 
     # Write audio to temp WAV files immediately so arrays don't stay in RAM
     # while the scorer subprocess loads a large model.
@@ -339,8 +339,9 @@ def run_dev(args, scorer, output_dir, modality):
         print(f"  Saved {lang_pair}: {len(grouped_scores[lang_pair])} scores → {scores_path}")
 
     # correlation evaluation
-    eval_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "evaluation", "iwslt26-metrics"))
-    run_correlation_eval(output_dir, args.split, grouped_scores.keys(), eval_dir)
+    if not args.no_correlation:
+        eval_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "evaluation", "iwslt26-metrics"))
+        run_correlation_eval(output_dir, args.split, grouped_scores.keys(), eval_dir)
 
     # WER correlation analysis
     if args.split == "dev_asr" and args.wer_csv:
@@ -438,6 +439,11 @@ def main():
                              "Override if SpeechQE deps are in a different env.")
     parser.add_argument("--wer-csv", default=None,
                         help="Path to WER CSV for WER correlation analysis (dev_asr only)")
+    parser.add_argument("--dataset", default="maikezu/scottish-metrics",
+                        help="HuggingFace dataset repo to load for dev/dev_asr tasks "
+                             "(default: maikezu/scottish-metrics)")
+    parser.add_argument("--no-correlation", action="store_true",
+                        help="Skip correlation evaluation (use when dataset has no gold scores)")
     args = parser.parse_args()
 
     # Infer split from task
@@ -445,8 +451,10 @@ def main():
         args.split = args.task if args.task in ("dev", "dev_asr") else "dev_asr"
 
     meta = METHODS[args.method]
-    output_dir = args.output_dir or meta["output_dir"]
-    modality   = meta["modality"]
+    base_output_dir = args.output_dir or meta["output_dir"]
+    dataset_name    = args.dataset.split("/")[-1]
+    output_dir      = os.path.join(base_output_dir, dataset_name)
+    modality        = meta["modality"]
 
     print(f"Method: {args.method}  |  Task: {args.task}  |  Output: {output_dir}")
     scorer = get_scorer(args.method, args)

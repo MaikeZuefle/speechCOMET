@@ -43,10 +43,16 @@ def load_model(model_folder=None, hf_model=None):
         output_dir = hf_model.replace("/", "_")
     else:
         ckpt_dir = os.path.join(model_folder, "checkpoints")
-        matches = glob.glob(os.path.join(ckpt_dir, "epoch=*-*.ckpt"))
+        matches = [
+            p for p in glob.glob(os.path.join(ckpt_dir, "epoch=*-val_kendall=*.ckpt"))
+            if not os.path.basename(p).startswith("worse_")
+            and re.search(r"val_kendall=(\d+\.\d+)", os.path.basename(p))
+        ]
+        if not matches:
+            raise FileNotFoundError(f"No val_kendall checkpoints found in {ckpt_dir}")
         checkpoint = max(
             matches,
-            key=lambda p: int(os.path.basename(p).split("epoch=")[1].split("-")[0])
+            key=lambda p: float(re.search(r"val_kendall=(\d+\.\d+)", os.path.basename(p)).group(1))
         )
         print(f"Loading checkpoint: {checkpoint}")
         model = speechcomet.load_from_checkpoint(checkpoint)

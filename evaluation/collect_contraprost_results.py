@@ -47,9 +47,12 @@ def collect(search_dirs):
             # Derive model name from path
             parts = path.split(os.sep)
             if "contraprost_results_" in os.path.basename(path):
-                # speechllm-baselines: …/ModelName/contraprost/contraprost_results_audio.csv
+                # speechllm-baselines: …/ModelName/contraprost[_prompt]/contraprost_results_audio.csv
                 modality = os.path.basename(path).replace("contraprost_results_", "").replace(".csv", "")
-                model_name = parts[-3] + f" ({modality})"
+                subdir = parts[-2]  # e.g. "contraprost" or "contraprost_contraprost_prosody"
+                prompt_suffix = subdir[len("contraprost"):].lstrip("_")  # "" or "contraprost_prosody"
+                suffix = f"_{prompt_suffix}" if prompt_suffix else ""
+                model_name = parts[-3] + suffix + f" ({modality})"
             else:
                 # trained_models: …/ModelName/contraprost_results.csv
                 model_name = parts[-2]
@@ -89,7 +92,7 @@ def pivot_wide(df):
 
 SEARCH_DIRS = [
     "trained_models/*/contraprost_results.csv",
-    "speechllm-baselines/*/contraprost/contraprost_results_*.csv",
+    "speechllm-baselines/results/*/contraprost*/contraprost_results_*.csv",
     "QE-baselines/results/*/contraprost_results.csv",
 ]
 

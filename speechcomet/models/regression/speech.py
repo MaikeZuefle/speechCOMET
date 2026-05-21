@@ -107,6 +107,7 @@ class SpeechRegression(RegressionMetric):
         lora_alpha: int = 16,
         lora_dropout: float = 0.0,
         sonar_ft_freeze_layers: int = 4,
+        max_audio_duration: Optional[float] = None,
         debug: bool = False,
         load_pretrained_weights: bool = True,
         local_files_only: bool = False,
@@ -413,7 +414,9 @@ class SpeechRegression(RegressionMetric):
             # Filter samples that would exceed SONAR's 4096 frame limit
             # SONAR uses fbank (10ms hop = 160 samples at 16kHz) + fbank_stride=2 → 320 samples/frame
             # Use sf.info() (header-only, no torchcodec) to avoid leaking resources over ~500k calls
-            max_duration = 4096 * 320 / 16000  # 81.92 seconds
+            sonar_max = 4096 * 320 / 16000  # 81.92 seconds — SONAR hard limit
+            max_duration = min(self.hparams.max_audio_duration, sonar_max) \
+                if self.hparams.max_audio_duration is not None else sonar_max
             before = len(ds)
             def _duration_ok(x):
                 import io, soundfile as sf
