@@ -11,7 +11,7 @@ from tqdm import tqdm
 
 _here = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, _here)
-sys.path.insert(0, os.path.join(_here, "..", "..", "evaluation"))
+sys.path.insert(0, os.path.join(_here, "..", "..", "speechcomet-eval"))
 
 from eval_utils import run_correlation_eval
 from generate_qwen_omni import (
@@ -41,7 +41,7 @@ def run_eval(args):
 
     _base = os.path.join(_here, "../..")
     default_out = os.path.join(
-        "speechllm-baselines", "results", args.model_name.replace("/", "_")
+        "baselines-speechllm", "results", args.model_name.replace("/", "_")
     )
     output_dir = os.path.join(_base, args.output_name or default_out, "shuffled_src")
     os.makedirs(output_dir, exist_ok=True)
@@ -120,7 +120,7 @@ def run_eval(args):
         print(f"  Saved {lp}: {len(grouped_scores[lp])} scores")
 
     # correlation evaluation
-    eval_dir = os.path.join(_base, "evaluation", "iwslt26-metrics")
+    eval_dir = os.path.join(_base, "speechcomet-eval", "iwslt26-metrics")
     run_correlation_eval(output_dir, args.split, grouped_scores.keys(), eval_dir, score_suffix=args.modality)
 
     print(f"Done. Results saved to {output_dir}/")
@@ -135,7 +135,7 @@ if __name__ == "__main__":
                         help="Input modality (use the modality the model was trained on)")
     parser.add_argument("--output-name", default=None,
                         help="Output path relative to repo root "
-                             "(default: speechllm-baselines/results/<model-name>)")
+                             "(default: baselines-speechllm/results/<model-name>)")
     parser.add_argument("--dataset", default="maikezu/iwslt2026-metrics-shared-train-dev")
     parser.add_argument("--split", default="dev", choices=["dev"])
     parser.add_argument("--batch-size", type=int, default=1)

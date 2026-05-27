@@ -323,7 +323,7 @@ if __name__ == "__main__":
     parser.add_argument("--model-name", type=str, required=True,
                         help="HuggingFace model ID or local path")
     parser.add_argument("--output-name", type=str, default=None,
-                        help="Output path relative to repo root (default: speechllm-baselines/<model-name>)")
+                        help="Output path relative to repo root (default: baselines-speechllm/<model-name>)")
     parser.add_argument("--dataset", type=str, default=None,
                         help="HuggingFace dataset name (for standard eval)")
     parser.add_argument("--split", type=str, default="dev",

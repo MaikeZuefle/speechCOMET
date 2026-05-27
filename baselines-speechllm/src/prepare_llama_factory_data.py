@@ -10,9 +10,9 @@ Modalities: text, audio, textaudio
 Audio is decoded from HF bytes via soundfile (no torchcodec) and saved to
   data/llama_factory/audio/{split}_{idx}.wav
 
-Run from speechllm-baselines/:
-  python scripts/prepare/prepare_llama_factory_data.py
-  python scripts/prepare/prepare_llama_factory_data.py --limit 100  # quick test
+Run from baselines-speechllm/:
+  python src/prepare_llama_factory_data.py
+  python src/prepare_llama_factory_data.py --limit 100  # quick test
 """
 import argparse
 import io

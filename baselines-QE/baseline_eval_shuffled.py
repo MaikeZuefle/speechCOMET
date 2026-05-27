@@ -9,9 +9,9 @@ human score are kept from the original example.
 Results are saved to <method_output_dir>/shuffled_src/.
 
 Usage (run from repo root):
-    python QE-baselines/run_eval_shuffled_src.py --method asr_comet  --split dev_asr
-    python QE-baselines/run_eval_shuffled_src.py --method blaser     --split dev_asr
-    python QE-baselines/run_eval_shuffled_src.py --method speechqe   --split dev_asr \\
+    python baselines-QE/baseline_eval_shuffled.py --method asr_comet  --split dev
+    python baselines-QE/baseline_eval_shuffled.py --method blaser     --split dev
+    python baselines-QE/baseline_eval_shuffled.py --method speechqe   --split dev \\
         --speechqe-model-de h-j-han/SpeechQE-TowerInstruct-7B-en2de
 """
 import argparse
@@ -28,9 +28,9 @@ from datasets import load_dataset
 from tqdm import tqdm
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from run_eval import METHODS, _decode_hf_audio, get_scorer
+from baseline_eval import METHODS, _decode_hf_audio, get_scorer
 
-sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "evaluation"))
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "speechcomet-eval"))
 from eval_utils import run_correlation_eval
 
 
@@ -51,8 +51,8 @@ def run(args):
 
     scorer = get_scorer(args.method, args)
 
-    print(f"Loading maikezu/scottish-metrics[{args.split}] ...")
-    entries = list(load_dataset("maikezu/scottish-metrics")[args.split])
+    print(f"Loading {args.dataset}[{args.split}] ...")
+    entries = list(load_dataset(args.dataset)[args.split])
 
     # Build per-lang-pair derangement
     lp_indices: dict[str, list[int]] = defaultdict(list)
@@ -142,7 +142,7 @@ def run(args):
         print(f"  Saved {lp}: {len(grouped_scores[lp])} scores → {scores_path}")
 
     # correlation evaluation
-    eval_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "evaluation", "iwslt26-metrics"))
+    eval_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "speechcomet-eval", "iwslt26-metrics"))
     run_correlation_eval(output_dir, args.split, grouped_scores.keys(), eval_dir)
 
     print(f"Done. Results in {output_dir}/")
@@ -152,7 +152,9 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--method", required=True,
                         choices=["asr_comet", "asr_comet_partial", "blaser", "speechqe"])
-    parser.add_argument("--split", default="dev_asr", choices=["dev", "dev_asr"])
+    parser.add_argument("--split", default="dev", choices=["dev"])
+    parser.add_argument("--dataset", default="maikezu/iwslt2026-metrics-shared-train-dev",
+                        help="HuggingFace dataset repo to load")
     parser.add_argument("--output-dir", default=None,
                         help="Override base output dir (shuffled_src/ appended automatically)")
     parser.add_argument("--speechqe-model-de", default=None)

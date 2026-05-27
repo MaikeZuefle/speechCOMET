@@ -33,12 +33,12 @@ for ENTRY in "${MODELS[@]}"; do
         --output-name "$OUTPUT_DIR" \
         --modality "$MODALITY"
 
-    cd ../../evaluation/iwslt26-metrics/
+    cd ../../speechcomet-eval/iwslt26-metrics/
     for scores_file in ../../$OUTPUT_DIR/output_scores_dev_*_${MODALITY}.jsonl; do
         lang_pair=$(basename "$scores_file" .jsonl | sed "s/output_scores_dev_//;s/_${MODALITY}$//")
         input_file="../../$OUTPUT_DIR/input_data_dev_${lang_pair}.jsonl"
         echo "Evaluating $lang_pair ..."
         python evaluation/__main__.py -i "$input_file" -m "$scores_file"
     done
-    cd ../../baselines-speechllm/src
+    cd ../../baselines-speechllm/src || exit 1
 done

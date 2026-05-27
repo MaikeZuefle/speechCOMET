@@ -1,8 +1,8 @@
 #!/bin/bash
 # Fine-tune Qwen2.5-Omni-7B (text modality) with LlamaFactory.
-# Run from speechllm-baselines/:  bash scripts/FT/02_ft_text.sh
+# Run from baselines-speechllm/:  bash scripts/FT/02_ft_text.sh
 
-cd "$(dirname "$0")/../.."  # run from speechllm-baselines/
+cd "$(dirname "$0")/../.."  # run from baselines-speechllm/
 
 export TORCHAUDIO_USE_BACKEND_DISPATCHER=0
 
