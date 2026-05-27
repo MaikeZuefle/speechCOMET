@@ -12,7 +12,7 @@ def run_correlation_eval(output_dir, split, lang_pairs, eval_dir, score_suffix="
 
     Args:
         output_dir:    directory containing input_data and output_scores files
-        split:         dataset split, e.g. "dev_asr"
+        split:         dataset split, e.g. "dev"
         lang_pairs:    iterable of lang pairs to evaluate, e.g. ["en-de", "en-zh"]
         eval_dir:      absolute path to evaluation/iwslt26-metrics/
         score_suffix:  optional suffix on score filename, e.g. "text" for SpeechLLM

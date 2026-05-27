@@ -17,12 +17,12 @@ Results are saved to:
   shuffled_text/  (--shuffle-modality text)
 
 Usage (run from repo root):
-    python evaluation/run_inf_shuffled_src.py \\
+    python speechcomet-eval/iwslt_eval_shuffled.py \\
         --model-folder trained_models/harris-20ep \\
         --modality audio \\
-        --split dev_asr
+        --split dev
 
-    python evaluation/run_inf_shuffled_src.py \\
+    python speechcomet-eval/iwslt_eval_shuffled.py \\
         --model-folder trained_models/orkney-sum-from-text-ckpt-20ep \\
         --modality audiotext \\
         --split dev \\
@@ -141,10 +141,10 @@ if __name__ == "__main__":
                         help="Path to Lightning log directory")
     parser.add_argument("--hf-model", default=None,
                         help="HuggingFace model repo id")
-    parser.add_argument("--dataset", default="maikezu/scottish-metrics")
+    parser.add_argument("--dataset", default="maikezu/iwslt2026-metrics-shared-train-dev")
     parser.add_argument("--modality", required=True,
                         choices=["text", "audio", "audiotext", "textaudio"])
-    parser.add_argument("--split", default="dev_asr", choices=["dev", "dev_asr"])
+    parser.add_argument("--split", default="dev")
     parser.add_argument("--batch-size", type=int, default=40)
     parser.add_argument("--seed", type=int, default=42)
     parser.add_argument("--shuffle-modality", default="both",

@@ -14,11 +14,11 @@ for METHOD in asr_comet asr_comet_partial blaser speechqe; do
         SPEECHQE_ARGS="--speechqe-model-de $SPEECHQE_MODEL --speechqe-model-zh $SPEECHQE_MODEL"
     fi
 
-    python QE-baselines/baseline_eval.py --method "$METHOD" --task dev $SPEECHQE_ARGS
+    python baselines-QE/baseline_eval.py --method "$METHOD" --task dev $SPEECHQE_ARGS
 
-    python QE-baselines/baseline_eval.py --method "$METHOD" --task mustshe \
+    python baselines-QE/baseline_eval.py --method "$METHOD" --task mustshe \
         --mustshe-dir "$MUSTSHE_DIR" $SPEECHQE_ARGS
 
-    python QE-baselines/baseline_eval.py --method "$METHOD" --task contraprost \
+    python baselines-QE/baseline_eval.py --method "$METHOD" --task contraprost \
         --contraprost-dir "$CONTRAPROST_DIR" $SPEECHQE_ARGS
 done

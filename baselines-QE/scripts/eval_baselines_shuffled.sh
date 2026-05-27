@@ -12,7 +12,7 @@ for METHOD in asr_comet asr_comet_partial blaser speechqe; do
         SPEECHQE_ARGS="--speechqe-model-de $SPEECHQE_MODEL"
     fi
 
-    python QE-baselines/baseline_eval_shuffled.py \
+    python baselines-QE/baseline_eval_shuffled.py \
         --method "$METHOD" \
         --split dev \
         $SPEECHQE_ARGS

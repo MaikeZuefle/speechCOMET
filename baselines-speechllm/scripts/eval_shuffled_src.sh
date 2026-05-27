@@ -1,7 +1,7 @@
 #!/bin/bash
 # Evaluate Qwen2.5-Omni models with shuffled source inputs.
 # Each model is run with the modality it was trained on.
-# Run from speechllm-baselines/: bash scripts/run_shuffled_src.sh
+# Run from baselines-speechllm/: bash scripts/eval_shuffled_src.sh
 
 cd "$(dirname "$0")/.." || exit 1
 
@@ -9,9 +9,9 @@ FT_TEXT="../saves/qwen2.5-omni-7b/merged/iwslt26_text"
 FT_AUDIO="../saves/qwen2.5-omni-7b/merged/iwslt26_audio"
 FT_TEXTAUDIO="../saves/qwen2.5-omni-7b/merged/iwslt26_textaudio"
 
-DATASET="maikezu/scottish-metrics"
-SPLIT=dev_asr
-RESULTS_BASE="speechllm-baselines/results"
+DATASET="maikezu/iwslt2026-metrics-shared-train-dev"
+SPLIT=dev
+RESULTS_BASE="baselines-speechllm/results"
 
 # format: model_path:output_name:modality
 MODELS=(

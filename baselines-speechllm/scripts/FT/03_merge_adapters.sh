@@ -1,7 +1,7 @@
 #!/bin/bash
-# Run from speechllm-baselines/:  bash scripts/FT/03_merge_adapters.sh
+# Run from baselines-speechllm/:  bash scripts/FT/03_merge_adapters.sh
 
-cd "$(dirname "$0")/../.."  # run from speechllm-baselines/
+cd "$(dirname "$0")/../.."  # run from baselines-speechllm/
 
 BASE_MODEL="Qwen/Qwen2.5-Omni-7B"
 

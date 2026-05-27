@@ -1,14 +1,14 @@
 """
 Evaluate QE baselines (asr_comet, asr_comet_partial, blaser, speechqe) on:
-  1. dev / dev_asr  — segment scores + correlation + WER analysis
-  2. mustshe        — pairwise accuracy
-  3. contraprost    — pairwise accuracy
+  1. dev     — segment scores + correlation
+  2. mustshe — pairwise accuracy
+  3. contraprost — pairwise accuracy
 
 Usage (run from repo root):
-    python QE-baselines/run_eval.py --method asr_comet  --task dev_asr
-    python QE-baselines/run_eval.py --method asr_comet  --task mustshe
-    python QE-baselines/run_eval.py --method blaser     --task contraprost
-    python QE-baselines/run_eval.py --method speechqe   --task dev_asr \\
+    python baselines-QE/baseline_eval.py --method asr_comet  --task dev
+    python baselines-QE/baseline_eval.py --method asr_comet  --task mustshe
+    python baselines-QE/baseline_eval.py --method blaser     --task contraprost
+    python baselines-QE/baseline_eval.py --method speechqe   --task dev \\
         --speechqe-model-de h-j-han/SpeechQE-TowerInstruct-7B-en2de
 """
 import argparse
@@ -21,20 +21,20 @@ from tqdm import tqdm
 
 import pandas as pd
 
-# Allow imports from evaluation/ (eval_utils, mustshe_eval, contraprost_eval)
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "evaluation"))
+# Allow imports from speechcomet-eval/ (eval_utils, mustshe_eval, contraprost_eval)
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "speechcomet-eval"))
 
 from eval_utils import load_contraprost_csv_files, run_correlation_eval
 import mustshe_eval as _mustshe
 import contraprost_eval as _contraprost
 
-# ─── Method metadata ────────────────────────────────────────────────────────
+# Method metadata
 
 METHODS = {
-    "asr_comet":         {"modality": "text",  "output_dir": "QE-baselines/results/qe-comet"},
-    "asr_comet_partial": {"modality": "text",  "output_dir": "QE-baselines/results/qe-comet-partial"},
-    "blaser":            {"modality": "audio", "output_dir": "QE-baselines/results/qe-blaser"},
-    "speechqe":          {"modality": "audio", "output_dir": "QE-baselines/results/qe-speechqe"},
+    "asr_comet":         {"modality": "text",  "output_dir": "baselines-QE/results/qe-comet"},
+    "asr_comet_partial": {"modality": "text",  "output_dir": "baselines-QE/results/qe-comet-partial"},
+    "blaser":            {"modality": "audio", "output_dir": "baselines-QE/results/qe-blaser"},
+    "speechqe":          {"modality": "audio", "output_dir": "baselines-QE/results/qe-speechqe"},
 }
 
 _LANG_NAMES = {
@@ -49,7 +49,7 @@ def _speechqe_lang_config(lang):
         "suffix_format": f"\n{name} translation: {{x}}",
     }
 
-# ─── Scorer loaders ─────────────────────────────────────────────────────────
+# Scorer loaders
 
 def load_comet_scorer(model_name):
     import comet
@@ -226,7 +226,7 @@ def get_scorer(method, args=None):
         raise ValueError(f"Unknown method: {method}")
 
 
-# ─── Task: dev / dev_asr ────────────────────────────────────────────────────
+# Task: dev
 
 def _decode_hf_audio(item):
     """Decode an HF audio value to (numpy float32 array, sample_rate).
@@ -340,22 +340,12 @@ def run_dev(args, scorer, output_dir, modality):
 
     # correlation evaluation
     if not args.no_correlation:
-        eval_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "evaluation", "iwslt26-metrics"))
+        eval_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "speechcomet-eval", "iwslt26-metrics"))
         run_correlation_eval(output_dir, args.split, grouped_scores.keys(), eval_dir)
 
-    # WER correlation analysis
-    if args.split == "dev_asr" and args.wer_csv:
-        for thresh in [80, 90]:
-            subprocess.run([
-                "python", "evaluation/wer_correlation_analysis.py",
-                "--model-dir", output_dir,
-                "--split", args.split,
-                "--wer-csv", args.wer_csv,
-                "--challenge-score-threshold", str(thresh),
-            ], check=True)
 
 
-# ─── Task: MuST-SHE ─────────────────────────────────────────────────────────
+# Task: MuST-SHE
 
 def run_mustshe(args, scorer, output_dir, modality):
     mustshe_dir = args.mustshe_dir
@@ -384,7 +374,7 @@ def run_mustshe(args, scorer, output_dir, modality):
     print(f"Saved to {output_dir}/mustshe_results.csv")
 
 
-# ─── Task: ContraProST ───────────────────────────────────────────────────────
+# Task: ContraProST
 
 def run_contraprost(args, scorer, output_dir, modality):
     df = load_contraprost_csv_files(args.contraprost_dir)
@@ -412,13 +402,13 @@ def run_contraprost(args, scorer, output_dir, modality):
     print(f"Saved to {output_dir}/contraprost_results.csv")
 
 
-# ─── Main ────────────────────────────────────────────────────────────────────
+# Main
 
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--method", required=True, choices=list(METHODS.keys()))
     parser.add_argument("--task", required=True,
-                        choices=["dev", "dev_asr", "mustshe", "contraprost"])
+                        choices=["dev", "mustshe", "contraprost"])
     parser.add_argument("--split", default=None,
                         help="Dataset split (inferred from --task if omitted)")
     parser.add_argument("--output-dir", default=None,
@@ -437,18 +427,16 @@ def main():
                         help="Python executable for SpeechQE subprocess "
                              "(default: same interpreter running this script). "
                              "Override if SpeechQE deps are in a different env.")
-    parser.add_argument("--wer-csv", default=None,
-                        help="Path to WER CSV for WER correlation analysis (dev_asr only)")
-    parser.add_argument("--dataset", default="maikezu/scottish-metrics",
-                        help="HuggingFace dataset repo to load for dev/dev_asr tasks "
-                             "(default: maikezu/scottish-metrics)")
+parser.add_argument("--dataset", default="maikezu/iwslt2026-metrics-shared-train-dev",
+                        help="HuggingFace dataset repo to load for dev tasks "
+                             "(default: maikezu/iwslt2026-metrics-shared-train-dev)")
     parser.add_argument("--no-correlation", action="store_true",
                         help="Skip correlation evaluation (use when dataset has no gold scores)")
     args = parser.parse_args()
 
     # Infer split from task
     if args.split is None:
-        args.split = args.task if args.task in ("dev", "dev_asr") else "dev_asr"
+        args.split = args.task if args.task == "dev" else "dev"
 
     meta = METHODS[args.method]
     base_output_dir = args.output_dir or meta["output_dir"]
@@ -459,7 +447,7 @@ def main():
     print(f"Method: {args.method}  |  Task: {args.task}  |  Output: {output_dir}")
     scorer = get_scorer(args.method, args)
 
-    if args.task in ("dev", "dev_asr"):
+    if args.task == "dev":
         run_dev(args, scorer, output_dir, modality)
     elif args.task == "mustshe":
         run_mustshe(args, scorer, output_dir, modality)
