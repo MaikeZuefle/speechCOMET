@@ -1,7 +1,7 @@
 #!/bin/bash
 # Evaluate Qwen2.5-Omni models with shuffled source inputs.
 # Each model is run with the modality it was trained on.
-# Run from repo root: bash baselines-speechllm/scripts/eval_shuffled_src.sh
+# Run from baselines-speechllm/: bash scripts/eval_shuffled_src.sh
 
 cd "$(dirname "$0")/.." || exit 1
 

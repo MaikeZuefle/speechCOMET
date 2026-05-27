@@ -152,9 +152,8 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--method", required=True,
                         choices=["asr_comet", "asr_comet_partial", "blaser", "speechqe"])
-    parser.add_argument("--split", default="dev", choices=["dev"])
-    parser.add_argument("--dataset", default="maikezu/iwslt2026-metrics-shared-train-dev",
-                        help="HuggingFace dataset repo to load")
+    parser.add_argument("--split", default="dev")
+    parser.add_argument("--dataset", default="maikezu/iwslt2026-metrics-shared-train-dev")
     parser.add_argument("--output-dir", default=None,
                         help="Override base output dir (shuffled_src/ appended automatically)")
     parser.add_argument("--speechqe-model-de", default=None)

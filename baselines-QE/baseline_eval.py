@@ -28,7 +28,7 @@ from eval_utils import load_contraprost_csv_files, run_correlation_eval
 import mustshe_eval as _mustshe
 import contraprost_eval as _contraprost
 
-# ─── Method metadata ────────────────────────────────────────────────────────
+# Method metadata
 
 METHODS = {
     "asr_comet":         {"modality": "text",  "output_dir": "baselines-QE/results/qe-comet"},
@@ -49,7 +49,7 @@ def _speechqe_lang_config(lang):
         "suffix_format": f"\n{name} translation: {{x}}",
     }
 
-# ─── Scorer loaders ─────────────────────────────────────────────────────────
+# Scorer loaders
 
 def load_comet_scorer(model_name):
     import comet
@@ -226,7 +226,7 @@ def get_scorer(method, args=None):
         raise ValueError(f"Unknown method: {method}")
 
 
-# ─── Task: dev ──────────────────────────────────────────────────────────────
+# Task: dev
 
 def _decode_hf_audio(item):
     """Decode an HF audio value to (numpy float32 array, sample_rate).
@@ -344,7 +344,8 @@ def run_dev(args, scorer, output_dir, modality):
         run_correlation_eval(output_dir, args.split, grouped_scores.keys(), eval_dir)
 
 
-# ─── Task: MuST-SHE ─────────────────────────────────────────────────────────
+
+# Task: MuST-SHE
 
 def run_mustshe(args, scorer, output_dir, modality):
     mustshe_dir = args.mustshe_dir
@@ -373,7 +374,7 @@ def run_mustshe(args, scorer, output_dir, modality):
     print(f"Saved to {output_dir}/mustshe_results.csv")
 
 
-# ─── Task: ContraProST ───────────────────────────────────────────────────────
+# Task: ContraProST
 
 def run_contraprost(args, scorer, output_dir, modality):
     df = load_contraprost_csv_files(args.contraprost_dir)
@@ -401,7 +402,7 @@ def run_contraprost(args, scorer, output_dir, modality):
     print(f"Saved to {output_dir}/contraprost_results.csv")
 
 
-# ─── Main ────────────────────────────────────────────────────────────────────
+# Main
 
 def main():
     parser = argparse.ArgumentParser()
@@ -426,10 +427,8 @@ def main():
                         help="Python executable for SpeechQE subprocess "
                              "(default: same interpreter running this script). "
                              "Override if SpeechQE deps are in a different env.")
-    parser.add_argument("--wer-csv", default=None,
-                        help="Path to WER CSV for WER correlation analysis")
     parser.add_argument("--dataset", default="maikezu/iwslt2026-metrics-shared-train-dev",
-                        help="HuggingFace dataset repo to load for dev task "
+                        help="HuggingFace dataset repo to load for dev tasks "
                              "(default: maikezu/iwslt2026-metrics-shared-train-dev)")
     parser.add_argument("--no-correlation", action="store_true",
                         help="Skip correlation evaluation (use when dataset has no gold scores)")

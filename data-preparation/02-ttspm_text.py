@@ -30,7 +30,7 @@ from lingua import Language, LanguageDetectorBuilder
 from tqdm import tqdm
 from transformers import AutoTokenizer, VitsModel
 
-# ── Kokoro language support ────────────────────────────────────────────────────
+# Kokoro language support
 LANG_VOICES = {
     Language.ENGLISH:    ('a', ["af_heart", "af_alloy", "af_aoede", "af_bella",
                                 "af_jessica", "af_kore", "af_nicole", "af_nova",
@@ -51,7 +51,7 @@ LANG_VOICES = {
     Language.PORTUGUESE: ('p', ["pf_dora", "pm_alex", "pm_santa"]),
 }
 
-# ── config ─────────────────────────────────────────────────────────────────────
+# config
 TRAIN_CSV    = "data/train/text_train.csv"
 DEV_CSV      = "data/dev/text_dev.csv"
 HF_REPO      = "maikezu/ben_nevis_tts"
@@ -59,7 +59,7 @@ SHARD_DIR    = "data/tts_shards"
 SAMPLE_RATE  = 24000
 BATCH_SIZE   = 1000
 
-# ── MMS-TTS fallback (lazy-loaded per language) ────────────────────────────────
+# MMS-TTS fallback (lazy-loaded per language)
 _mms_cache = {}  # iso_code -> (model, tokenizer, native_sr) or None
 
 
@@ -90,7 +90,7 @@ def tts_mms(src_text: str, language: Language):
     return audio
 
 
-# ── helpers ────────────────────────────────────────────────────────────────────
+# helpers
 def pick_kokoro_voice(src_text: str, language: Language):
     lang_code, voices = LANG_VOICES[language]
     h = int(hashlib.md5(src_text.encode()).hexdigest(), 16)
@@ -168,7 +168,7 @@ def process_and_push(df, split_name, kokoro_pipelines, detector):
     dataset.push_to_hub(HF_REPO, split=split_name)
 
 
-# ── main ───────────────────────────────────────────────────────────────────────
+# main
 # Build language detector covering all lingua languages (MMS covers the rest)
 detector = LanguageDetectorBuilder.from_all_languages().build()
 
