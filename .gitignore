@@ -164,3 +164,7 @@ baselines-QE/results
 baselines-speechllm/results
 train_with_resume_unfreeze_sonar.sh
 train_with_resume_whisper.sh
+iwslt2026data/
+myjob_qwen.sh
+baselines-QE/SpeechQE/outputs/speechqe.eval.tsv
+baselines-QE/SpeechQE/outputs/speechqe_eval_chunk0*

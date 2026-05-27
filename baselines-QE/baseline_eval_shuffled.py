@@ -28,9 +28,9 @@ from datasets import load_dataset
 from tqdm import tqdm
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from run_eval import METHODS, _decode_hf_audio, get_scorer
+from baseline_eval import METHODS, _decode_hf_audio, get_scorer
 
-sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "evaluation"))
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "speechcomet-eval"))
 from eval_utils import run_correlation_eval
 
 
@@ -142,7 +142,7 @@ def run(args):
         print(f"  Saved {lp}: {len(grouped_scores[lp])} scores → {scores_path}")
 
     # correlation evaluation
-    eval_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "evaluation", "iwslt26-metrics"))
+    eval_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "speechcomet-eval", "iwslt26-metrics"))
     run_correlation_eval(output_dir, args.split, grouped_scores.keys(), eval_dir)
 
     print(f"Done. Results in {output_dir}/")

@@ -40,5 +40,5 @@ for ENTRY in "${MODELS[@]}"; do
         echo "Evaluating $lang_pair ..."
         python evaluation/__main__.py -i "$input_file" -m "$scores_file"
     done
-    cd ../../baselines-speechllm/src
+    cd ../../baselines-speechllm/src || exit 1
 done

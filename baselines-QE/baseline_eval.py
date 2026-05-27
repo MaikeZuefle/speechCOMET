@@ -1,7 +1,7 @@
 """
 Evaluate QE baselines (asr_comet, asr_comet_partial, blaser, speechqe) on:
-  1. dev     — segment scores + correlation
-  2. mustshe — pairwise accuracy
+  1. dev      — segment scores + correlation
+  2. mustshe  — pairwise accuracy
   3. contraprost — pairwise accuracy
 
 Usage (run from repo root):
@@ -427,7 +427,7 @@ def main():
                         help="Python executable for SpeechQE subprocess "
                              "(default: same interpreter running this script). "
                              "Override if SpeechQE deps are in a different env.")
-parser.add_argument("--dataset", default="maikezu/iwslt2026-metrics-shared-train-dev",
+    parser.add_argument("--dataset", default="maikezu/iwslt2026-metrics-shared-train-dev",
                         help="HuggingFace dataset repo to load for dev tasks "
                              "(default: maikezu/iwslt2026-metrics-shared-train-dev)")
     parser.add_argument("--no-correlation", action="store_true",
