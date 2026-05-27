@@ -105,9 +105,8 @@ if __name__ == "__main__":
     parser.add_argument(
         "--split",
         type=str,
-        default="dev_asr",
-        choices=["dev", "dev_asr"],
-        help="Dataset split to evaluate on (default: dev_asr)"
+        default="dev",
+        help="Dataset split to evaluate on (default: dev)"
     )
     args = parser.parse_args()
     if not args.hf_model and not args.model_folder:

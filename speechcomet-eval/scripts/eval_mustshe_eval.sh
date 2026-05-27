@@ -17,7 +17,7 @@ for ENTRY in "${MODELS[@]}"; do
 
     echo "=== MuST-SHE eval for $model ==="
 
-    python evaluation/mustshe_eval.py \
+    python speechcomet-eval/mustshe_eval.py \
         --mustshe-dir "$MUSTSHE_DIR" \
         --modality "$modality" \
         --batch-size 32 \

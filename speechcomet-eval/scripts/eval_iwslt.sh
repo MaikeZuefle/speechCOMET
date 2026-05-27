@@ -10,6 +10,7 @@ MODELS=(
 )
 
 SPLIT=dev
+DATASET=maikezu/iwslt2026-metrics-shared-train-dev
 CHECKPOINT_FOLDER=trained_models
 
 for ENTRY in "${MODELS[@]}"; do
@@ -19,12 +20,13 @@ for ENTRY in "${MODELS[@]}"; do
     echo ""
     echo "=== $model ==="
 
-    python evaluation/iwslt_eval.py \
+    python speechcomet-eval/iwslt_eval.py \
         --model-folder "$OUTPUT_DIR" \
         --modality "$modality" \
-        --split "$SPLIT"
+        --split "$SPLIT" \
+        --dataset "$DATASET"
 
-    cd evaluation/iwslt26-metrics/
+    cd speechcomet-eval/iwslt26-metrics/
     for scores_file in ../../$OUTPUT_DIR/output_scores_${SPLIT}_*.jsonl; do
         lang_pair=$(basename "$scores_file" .jsonl | sed "s/output_scores_${SPLIT}_//")
         input_file="../../$OUTPUT_DIR/input_data_${SPLIT}_${lang_pair}.jsonl"

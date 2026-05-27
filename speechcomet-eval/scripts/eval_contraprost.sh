@@ -17,7 +17,7 @@ for ENTRY in "${MODELS[@]}"; do
 
     echo "=== ContraProST eval for $model ==="
 
-    python evaluation/contraprost_eval.py \
+    python speechcomet-eval/contraprost_eval.py \
         --data-dir "$DATA_DIR" \
         --modality "$modality" \
         --batch-size 32 \

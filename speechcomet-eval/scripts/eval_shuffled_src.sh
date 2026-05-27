@@ -28,14 +28,14 @@ run_shuffled() {
     if ls "$output_dir/$subdir/output_scores_${split}_"*.jsonl &>/dev/null; then
         echo "  Scores already exist in $subdir/, skipping inference."
     else
-        python evaluation/iwslt_eval_shuffled.py \
+        python speechcomet-eval/iwslt_eval_shuffled.py \
             --model-folder "$output_dir" \
             --modality "$modality" \
             --split "$split" \
             --shuffle-modality "$shuffle_mod"
     fi
 
-    cd evaluation/iwslt26-metrics/
+    cd speechcomet-eval/iwslt26-metrics/
     for scores_file in "../../$output_dir/$subdir/output_scores_${split}_"*.jsonl; do
         lang_pair=$(basename "$scores_file" .jsonl | sed "s/output_scores_${split}_//")
         input_file="../../$output_dir/$subdir/input_data_${split}_${lang_pair}.jsonl"
