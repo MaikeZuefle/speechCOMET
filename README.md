@@ -36,6 +36,10 @@ SpeechCOMET models take a hypothesis translation and a source (text, speech, or 
 ```python
 import speechcomet
 
+# Load from HuggingFace
+model = speechcomet.load_from_checkpoint(speechcomet.download_model("maikezu/SpeechCOMET-textaudio-large"))
+
+# Load from local checkpoint
 model = speechcomet.load_from_checkpoint("path/to/checkpoint")
 
 # Text source
