@@ -69,6 +69,15 @@ def get_src_audio(entry, audio_base_dir, tmp_dir):
 
     start = entry["start_timestamp"]
     end = entry["end_timestamp"]
+
+    # wav2vec2's CNN feature extractor needs at least ~320 samples at 16 kHz
+    # (stride product 5×2⁶=320, ~20 ms). Use 0.5 s as a safe lower bound.
+    # If end is past the file's actual duration ffmpeg just stops there, so
+    # extending is safe even if the file is shorter.
+    MIN_DURATION = 0.5
+    if end - start < MIN_DURATION:
+        end = start + MIN_DURATION
+
     doc_id = entry.get("doc_id", "unknown").replace("/", "_")
     tgt_lang = entry.get("tgt_lang", "xx")
     out_path = os.path.join(tmp_dir, f"{doc_id}_{tgt_lang}_{start:.3f}_{end:.3f}.wav")

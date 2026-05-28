@@ -17,4 +17,5 @@ python iwslt2026/eval_speechcomet.py \
     --modality "$MODALITY" \
     --split "$SPLIT" \
     --dataset "$DATASET" \
-    --audio-base-dir "$AUDIO_BASE_DIR"
+    --audio-base-dir "$AUDIO_BASE_DIR" \
+    --batch-size 8

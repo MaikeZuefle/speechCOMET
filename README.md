@@ -1,6 +1,7 @@
 # Why We Need Speech to Evaluate Speech Translation
 
 [![HuggingFace Collection](https://img.shields.io/badge/HuggingFace-Collection-yellow?logo=huggingface)](https://huggingface.co/collections/maikezu/speechcomet)
+[![arXiv](https://img.shields.io/badge/arXiv-2605.28227-b31b1b?logo=arxiv)](https://arxiv.org/abs/2605.28227)
 
 <p align="center"><img src="why_we_need_speech_for_st_eval.png" width="500"/></p>
 
@@ -125,3 +126,17 @@ bash baselines-speechllm/scripts/eval_*.sh  # iwslt, mustshe, contraprost, shuff
 ```
 
 Fine-tuned LoRA adapters are available on HuggingFace (`maikezu/ST-QE-SpeechLLM-{Text/Speech/SpTxt}-FT`) and can be merged with the base model using the [merge script](baselines-speechllm/scripts/FT/03_merge_adapters.sh), or trained from scratch with the [fine-tuning scripts](baselines-speechllm/scripts/FT/).
+
+## Citation
+
+```bibtex
+@misc{züfle2026needspeechevaluatespeech,
+      title={Why We Need Speech to Evaluate Speech Translation}, 
+      author={Maike Züfle and Danni Liu and Vilém Zouhar and Jan Niehues},
+      year={2026},
+      eprint={2605.28227},
+      archivePrefix={arXiv},
+      primaryClass={cs.CL},
+      url={https://arxiv.org/abs/2605.28227}, 
+}
+```
