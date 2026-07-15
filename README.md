@@ -106,8 +106,13 @@ The TTS synthesis from the WMT text data ([`zouharvi/wmt-human-all`](https://hug
 Evaluation benchmarks:
 
 - **IWSLT dev**: dev split of [`maikezu/iwslt2026-metrics-shared-train-dev`](https://huggingface.co/datasets/maikezu/iwslt2026-metrics-shared-train-dev)
-- **[MuST-SHE](https://aclanthology.org/2020.acl-main.619/)** (Bentivogli et al., 2020): <!-- TODO: add download instructions -->
-- **[ContraProST](https://aclanthology.org/2024.wmt-1.119/)** (Tsiamas et al., 2024): <!-- TODO: add download instructions -->
+- **[MuST-SHE](https://aclanthology.org/2020.acl-main.619/)** (Bentivogli et al., 2020)
+- **[ContraProST](https://aclanthology.org/2024.wmt-1.119/)** (Tsiamas et al., 2024)
+
+## Probing Data
+- [`speaker gender probing`](data-preparation/03-prepare_mustshe_probe.py)
+- [`emotion probing`](data-preparation/04-prepare_contraprost_emotion_probe.py)
+- [`intonation probing`](data-preparation/04-prepare_contraprost_intonation_probe.py)
 
 ## Baselines
 
