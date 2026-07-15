@@ -106,13 +106,9 @@ The TTS synthesis from the WMT text data ([`zouharvi/wmt-human-all`](https://hug
 Evaluation benchmarks:
 
 - **IWSLT dev**: dev split of [`maikezu/iwslt2026-metrics-shared-train-dev`](https://huggingface.co/datasets/maikezu/iwslt2026-metrics-shared-train-dev)
-- **[MuST-SHE](https://aclanthology.org/2020.acl-main.619/)** (Bentivogli et al., 2020)
-- **[ContraProST](https://aclanthology.org/2024.wmt-1.119/)** (Tsiamas et al., 2024)
+- **[MuST-SHE](https://aclanthology.org/2020.acl-main.619/)** (Bentivogli et al., 2020): Please download the corresponding dataset and run [`data-preparation/03-prepare_mustshe.py`](data-preparation/03-prepare_mustshe.py)
+- **[ContraProST](https://aclanthology.org/2024.wmt-1.119/)** (Tsiamas et al., 2024): Please download the corresponding dataset and run [`data-preparation/03-prepare_contraprost.py`](data-preparation/03-prepare_contraprost.py)
 
-## Probing Data
-- [`speaker gender probing`](data-preparation/03-prepare_mustshe_probe.py)
-- [`emotion probing`](data-preparation/04-prepare_contraprost_emotion_probe.py)
-- [`intonation probing`](data-preparation/04-prepare_contraprost_intonation_probe.py)
 
 ## Baselines
 
@@ -131,6 +127,10 @@ bash baselines-speechllm/scripts/eval_*.sh  # iwslt, mustshe, contraprost, shuff
 ```
 
 Fine-tuned LoRA adapters are available on HuggingFace (`maikezu/ST-QE-SpeechLLM-{Text/Speech/SpTxt}-FT`) and can be merged with the base model using the [merge script](baselines-speechllm/scripts/FT/03_merge_adapters.sh), or trained from scratch with the [fine-tuning scripts](baselines-speechllm/scripts/FT/).
+
+## Probing 
+
+Please see [`probing`](probing) for the data preparation and probing scripts.
 
 ## Citation
 
